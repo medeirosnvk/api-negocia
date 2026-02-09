@@ -1,6 +1,4 @@
 import "dotenv/config";
-import path from "path";
-import { fileURLToPath } from "url";
 import express, { Request, Response } from "express";
 import session, { SessionOptions } from "express-session";
 import { ChatEngine } from "./ChatEngine.js";
@@ -200,14 +198,6 @@ app.post("/api/formalizar-acordo", async (req: Request, res: Response) => {
  */
 app.get("/api/health", (req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-// Servir frontend estático em produção
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const frontendDist = path.join(__dirname, "..", "frontend", "dist");
-app.use(express.static(frontendDist));
-app.get("*", (_req: Request, res: Response) => {
-  res.sendFile(path.join(frontendDist, "index.html"));
 });
 
 // Iniciar servidor
