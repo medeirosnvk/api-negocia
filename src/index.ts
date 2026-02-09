@@ -73,7 +73,6 @@ const configuraçãoExemplo: ConfiguracaoAcordo = {
   ofertas: [{ tarifa_boleto: 11.9 }],
 };
 
-
 /**
  * Rota de API - processa mensagens de negociação (sem batching, resposta imediata)
  */
@@ -124,8 +123,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     req.session.cadencia = engine.getCadencia();
     req.session.estado = engine.getEstado();
     req.session.credores = engine.getCredores();
-    req.session.credor_selecionado =
-      engine.getCredorSelecionado() || undefined;
+    req.session.credor_selecionado = engine.getCredorSelecionado() || undefined;
     req.session.ofertas_api = engine.getOfertasAPI();
     req.session.ofertas_api_mensais = engine.getOfertasAPIMensais();
     req.session.ofertas_api_semanais = engine.getOfertasAPISemanais();
@@ -170,7 +168,8 @@ app.get("/api/ofertas", (req: Request, res: Response) => {
  */
 app.post("/api/formalizar-acordo", async (req: Request, res: Response) => {
   try {
-    const { iddevedor, plano, periodicidade, diasentrada } = req.body as DadosFormalizacao;
+    const { iddevedor, plano, periodicidade, diasentrada } =
+      req.body as DadosFormalizacao;
 
     if (!iddevedor || !plano) {
       return res
@@ -178,7 +177,12 @@ app.post("/api/formalizar-acordo", async (req: Request, res: Response) => {
         .json({ erro: "iddevedor e plano são obrigatórios" });
     }
 
-    const resultado = await formalizarAcordo({ iddevedor, plano, periodicidade, diasentrada });
+    const resultado = await formalizarAcordo({
+      iddevedor,
+      plano,
+      periodicidade,
+      diasentrada,
+    });
     res.json(resultado);
   } catch (error) {
     console.error("Erro ao formalizar acordo:", error);
@@ -199,6 +203,6 @@ app.get("/api/health", (req: Request, res: Response) => {
 // Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor LucIA rodando em http://localhost:${PORT}`);
-  console.log(`📝 Interface: http://localhost:5175`);
+  console.log(`📝 Interface: http://localhost:5176`);
   console.log(`💬 API de chat: http://localhost:${PORT}/api/chat`);
 });
