@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "module": "esnext"
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalEsm": true,
+    "transpileOnly": true
+  }
+}
