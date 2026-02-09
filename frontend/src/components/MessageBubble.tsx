@@ -1,12 +1,13 @@
 import React from 'react';
 import type { Mensagem } from '../types';
 import clsx from 'clsx';
+import { useTheme } from '../App';
 
 interface MessageBubbleProps {
   mensagem: Mensagem;
 }
 
-function formatarTexto(texto: string) {
+function formatarTexto(texto: string, isLight: boolean) {
   const combinedRegex = /(https?:\/\/[^\s]+)|(\*\*[^*]+\*\*|\*[^*]+\*)/g;
 
   const partes: (string | React.JSX.Element)[] = [];
@@ -34,7 +35,7 @@ function formatarTexto(texto: string) {
     } else if (match[2]) {
       const conteudo = match[2].replace(/\*/g, '');
       partes.push(
-        <strong key={`bold-${keyCounter++}`} className="font-semibold text-lucia-bright">
+        <strong key={`bold-${keyCounter++}`} className={clsx("font-semibold", isLight ? "text-gray-900" : "text-lucia-bright")}>
           {conteudo}
         </strong>
       );
@@ -51,6 +52,8 @@ function formatarTexto(texto: string) {
 }
 
 export function MessageBubble({ mensagem }: MessageBubbleProps) {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const isUser = mensagem.role === 'user';
   const timestamp = new Date(mensagem.ts);
   const horaFormatada = timestamp.toLocaleTimeString('pt-BR', {
@@ -69,20 +72,28 @@ export function MessageBubble({ mensagem }: MessageBubbleProps) {
         className={clsx(
           'max-w-[80%] md:max-w-[72%] rounded-2xl px-4 py-3 transition-colors',
           isUser
-            ? 'bg-gradient-to-br from-lucia-user to-[#162d4a] border border-blue-500/10'
-            : 'bg-lucia-panel border border-lucia-border'
+            ? isLight
+              ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200'
+              : 'bg-gradient-to-br from-emerald-900/80 to-emerald-950 border border-emerald-500/10'
+            : isLight
+              ? 'bg-white border border-gray-200'
+              : 'bg-lucia-panel border border-lucia-border'
         )}
       >
         <p className={clsx(
           'text-[13.5px] leading-[1.65] whitespace-pre-wrap break-words font-body',
-          isUser ? 'text-lucia-user-text' : 'text-lucia-text'
+          isUser
+            ? isLight ? 'text-emerald-900' : 'text-emerald-100'
+            : isLight ? 'text-gray-700' : 'text-lucia-text'
         )}>
-          {formatarTexto(mensagem.text)}
+          {formatarTexto(mensagem.text, isLight)}
         </p>
         <div
           className={clsx(
             'text-[10px] mt-1.5 text-right font-mono tracking-wider',
-            isUser ? 'text-blue-400/40' : 'text-lucia-muted/50'
+            isUser
+              ? isLight ? 'text-emerald-600/50' : 'text-emerald-400/40'
+              : isLight ? 'text-gray-400' : 'text-lucia-muted/50'
           )}
         >
           {horaFormatada}

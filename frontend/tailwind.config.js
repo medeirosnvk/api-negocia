@@ -4,10 +4,12 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         lucia: {
+          // Dark theme colors
           bg: '#0c0e12',
           surface: '#14171d',
           panel: '#1a1e26',
@@ -17,15 +19,30 @@ export default {
           muted: '#6b7a94',
           text: '#c8d1de',
           bright: '#e8ecf2',
-          accent: '#d4a853',
-          'accent-hover': '#e5bc6a',
-          'accent-soft': 'rgba(212, 168, 83, 0.12)',
-          'accent-glow': 'rgba(212, 168, 83, 0.25)',
+          accent: '#2d9e5e',
+          'accent-hover': '#3ecf8e',
+          'accent-soft': 'rgba(45, 158, 94, 0.12)',
+          'accent-glow': 'rgba(45, 158, 94, 0.25)',
           user: '#1e3a5f',
           'user-text': '#b8d4f0',
           assistant: '#1a1e26',
           success: '#3ecf8e',
           error: '#ef6461',
+          // Light theme colors
+          light: {
+            bg: '#f5f7fa',
+            surface: '#ffffff',
+            panel: '#f0f2f5',
+            elevated: '#e8eaed',
+            border: '#d1d5db',
+            'border-light': '#e5e7eb',
+            muted: '#6b7280',
+            text: '#374151',
+            bright: '#111827',
+            user: '#dcfce7',
+            'user-text': '#14532d',
+            assistant: '#f9fafb',
+          }
         }
       },
       fontFamily: {

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
+import { useTheme } from '../App';
+import clsx from 'clsx';
 import type { Mensagem, ChatResponse, FormalizacaoResponse } from '../types';
 
 const MENSAGEM_INICIAL: Mensagem = {
@@ -248,14 +250,14 @@ export function ChatWindow() {
           h1 { margin: 0 0 4px 0; font-size: 20px; color: #e8ecf2; font-weight: 600; }
           .sub { color:#6b7a94; margin: 0 0 24px 0; font-size: 12px; letter-spacing: 0.5px; }
           .msg { background:#1a1e26; border:1px solid #2a303c; border-radius:12px; padding:16px; margin: 12px 0; }
-          .msg.user { border-left: 3px solid #1e3a5f; }
-          .msg.assistant { border-left: 3px solid #d4a853; }
+          .msg.user { border-left: 3px solid #065f46; }
+          .msg.assistant { border-left: 3px solid #2d9e5e; }
           .meta { display:flex; justify-content:space-between; gap:12px; color:#6b7a94; font-size: 11px; margin-bottom: 10px; }
           .who { font-weight:600; color:#e8ecf2; }
           .text { color:#c8d1de; font-size: 13.5px; line-height: 1.65; white-space: normal; }
           .actions { margin: 20px 0 0; display:flex; gap:10px; }
           button { cursor:pointer; border:1px solid #2a303c; background:#1a1e26; color:#c8d1de; padding:10px 16px; border-radius:10px; font-family: 'DM Sans', sans-serif; font-size: 13px; transition: all 0.2s; }
-          button:hover { background:#222730; border-color: #d4a853; color: #d4a853; }
+          button:hover { background:#222730; border-color: #2d9e5e; color: #2d9e5e; }
         </style>
       </head>
       <body>
@@ -278,7 +280,7 @@ export function ChatWindow() {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-[600px] h-[calc(100vh-4rem)] max-h-[900px] glass-panel border border-lucia-border rounded-2xl overflow-hidden shadow-2xl shadow-black/40 relative">
+    <div className={clsx("flex flex-col w-full max-w-[600px] h-[calc(100vh-4rem)] max-h-[900px] glass-panel border rounded-2xl overflow-hidden shadow-2xl relative", useTheme().theme === 'light' ? "border-gray-200 shadow-black/10" : "border-lucia-border shadow-black/40")}>
       {/* Subtle top accent line */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-lucia-accent/30 to-transparent" />
 
