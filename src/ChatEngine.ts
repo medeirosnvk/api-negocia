@@ -1021,16 +1021,13 @@ Data de hoje: ${hoje}`;
         this.ofertasAPI = this.ofertasAPISemanais;
         this.ofertas = this.ofertasSemanais;
 
-        const textoOfertasMensais = this.formatarOfertasTexto(
-          this.mapearOfertasAPI(this.ofertasAPI),
-        );
         const textoOfertasSemanais = this.formatarOfertasTexto(this.ofertasSemanais);
 
         this.historico.push({
           role: "system",
-          content: `O cliente informou que pode pagar aproximadamente R$ ${valor.toFixed(2)} por parcela. Nenhuma oferta MENSAL coube no orçamento, mas o sistema encontrou uma oferta SEMANAL que cabe:\n\n` +
-            `MELHOR OFERTA SEMANAL: ${oferta.parcelas}x de R$ ${oferta.valor_parcela} (Total: R$ ${oferta.total_com_taxas}, 1º pagamento: ${oferta.data_primeiro_pagamento}, Último: ${oferta.vencimento_final})\n\n` +
-            `Sugira ao cliente a opção semanal como alternativa, explicando que o valor fica mais acessível com parcelas semanais.\n\nOfertas semanais disponíveis:\n${textoOfertasSemanais}`,
+          content: `O cliente informou que pode pagar aproximadamente R$ ${valor.toFixed(2)} por parcela. O sistema verificou automaticamente as ofertas mensais e semanais. Nenhuma parcela MENSAL cabe no orçamento, mas encontrou uma oferta SEMANAL que cabe perfeitamente:\n\n` +
+            `MELHOR OFERTA SEMANAL: ${oferta.parcelas}x de R$ ${oferta.valor_parcela} semanais (Total: R$ ${oferta.total_com_taxas}, 1º pagamento: ${oferta.data_primeiro_pagamento}, Último: ${oferta.vencimento_final})\n\n` +
+            `IMPORTANTE: Apresente essa oferta semanal diretamente com entusiasmo. NÃO pergunte se o cliente quer trocar para semanal — já apresente como a melhor opção encontrada para o orçamento dele. Explique que o valor fica mais acessível com parcelas semanais.\n\nTodas as ofertas semanais disponíveis:\n${textoOfertasSemanais}`,
         });
         return;
       }
