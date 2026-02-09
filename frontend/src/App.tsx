@@ -11,7 +11,7 @@ export function useTheme() {
 }
 
 function App() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
   useEffect(() => {
     document.documentElement.classList.toggle('light', theme === 'light');
