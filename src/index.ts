@@ -34,12 +34,15 @@ const PORT = process.env.PORT || 3001;
 const API_KEY = process.env.API_KEY || "s2_33e5d129dcd84178afca14a2f05f954a";
 
 // Configuração de sessão
+// Trust proxy (Nginx) para cookies/sessão funcionarem atrás de reverse proxy
+app.set("trust proxy", 1);
+
 const sessionConfig: SessionOptions = {
   secret: process.env.SESSION_SECRET || "negocia-secret-key",
   resave: false,
   saveUninitialized: true,
   cookie: {
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     maxAge: 24 * 60 * 60 * 1000, // 24 horas
     httpOnly: true,
   },

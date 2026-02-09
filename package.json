@@ -5,9 +5,10 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cd frontend && npm run build",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
+    "deploy": "npm run build && pm2 restart ecosystem.config.cjs",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
