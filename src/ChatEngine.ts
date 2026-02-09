@@ -1121,6 +1121,17 @@ Data de hoje: ${hoje}`;
       );
 
       if (this.ofertasAPI.length === 0) {
+        // Se não achou na periodicidade solicitada mas tem semanais cacheadas, sugerir
+        if (this.parametrosOferta.periodicidade !== 7 && this.ofertasSemanais.length > 0) {
+          const textoOfertasSemanais = this.formatarOfertasTexto(this.ofertasSemanais);
+          this.historico.push({
+            role: "system",
+            content: `Não foram encontradas ofertas para a periodicidade solicitada (${this.mapearPeriodicidadeNome(this.parametrosOferta.periodicidade)}). ` +
+              `Porém, existem ofertas no plano SEMANAL disponíveis:\n${textoOfertasSemanais}\n\n` +
+              `Informe ao cliente que não há ofertas nessa periodicidade, mas sugira as opções semanais como alternativa.`,
+          });
+          return;
+        }
         this.historico.push({
           role: "system",
           content:
@@ -1148,9 +1159,34 @@ Data de hoje: ${hoje}`;
     );
     const textoOfertas = this.formatarOfertasTexto(this.ofertas);
 
+    // Verificar se o plano solicitado excede as ofertas disponíveis na periodicidade atual
+    // Se sim, incluir ofertas semanais cacheadas como alternativa
+    const planoSolicitado = this.parametrosOferta.plano;
+    const maxParcelasAtuais = this.ofertas.length > 0
+      ? Math.max(...this.ofertas.map(o => o.parcelas))
+      : 0;
+    const temAlternativaSemanal =
+      this.parametrosOferta.periodicidade === 30 &&
+      maxParcelasAtuais < planoSolicitado &&
+      this.ofertasSemanais.length > 0;
+
+    let mensagemSistema = `O cliente solicitou novas condições. O sistema recalculou as ofertas com: plano=${this.parametrosOferta.plano}, periodicidade=${periodicidadeNome}, dias de entrada=${this.parametrosOferta.diasentrada}.\n\nNovas ofertas ${periodicidadeNome}s disponíveis:\n${textoOfertas}`;
+
+    if (temAlternativaSemanal) {
+      const textoOfertasSemanais = this.formatarOfertasTexto(this.ofertasSemanais);
+      const maxParcelasSemanais = Math.max(...this.ofertasSemanais.map(o => o.parcelas));
+      mensagemSistema += `\n\nATENÇÃO: O cliente pediu ${planoSolicitado}x, mas no plano mensal o máximo disponível é ${maxParcelasAtuais}x. ` +
+        `Porém, no plano SEMANAL existem opções de até ${maxParcelasSemanais}x com parcelas menores!\n\n` +
+        `Ofertas SEMANAIS disponíveis:\n${textoOfertasSemanais}\n\n` +
+        `Apresente as ofertas mensais disponíveis E sugira proativamente as ofertas semanais como alternativa para o cliente conseguir mais parcelas. ` +
+        `Explique que no plano semanal ele pode parcelar em mais vezes com valores menores por parcela.`;
+    } else {
+      mensagemSistema += `\n\nApresente as novas ofertas de forma clara e acolhedora.`;
+    }
+
     this.historico.push({
       role: "system",
-      content: `O cliente solicitou novas condições. O sistema recalculou as ofertas com: plano=${this.parametrosOferta.plano}, periodicidade=${periodicidadeNome}, dias de entrada=${this.parametrosOferta.diasentrada}.\n\nNovas ofertas disponíveis:\n${textoOfertas}\n\nApresente as novas ofertas de forma clara e acolhedora.`,
+      content: mensagemSistema,
     });
   }
 
