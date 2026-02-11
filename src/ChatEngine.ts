@@ -1,5 +1,4 @@
 import axios from "axios";
-import https from "https";
 import { CalculadoraAcordo } from "./CalculadoraAcordo.js";
 import {
   ConfiguracaoAcordo,
@@ -608,10 +607,6 @@ Data de hoje: ${hoje}`;
    */
   private async chamarLLM(mensagemInterna?: string): Promise<ResultadoChat> {
     try {
-      const httpsAgent = new https.Agent({
-        rejectUnauthorized: false,
-      });
-
       // Se houver mensagem interna, adicionar temporariamente
       const mensagens = mensagemInterna
         ? [
@@ -621,9 +616,9 @@ Data de hoje: ${hoje}`;
         : this.historico;
 
       const response = await axios.post(
-        "https://routellm.abacus.ai/v1/chat/completions",
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         {
-          model: "gpt-5.1",
+          model: "gemini-2.0-flash",
           messages: mensagens,
           temperature: 0.7,
         },
@@ -632,8 +627,7 @@ Data de hoje: ${hoje}`;
             Authorization: `Bearer ${this.apiKey}`,
             "Content-Type": "application/json",
           },
-          httpsAgent: httpsAgent,
-          timeout: 30000,
+          timeout: 60000,
         },
       );
 

@@ -31,7 +31,7 @@ declare module "express-session" {
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const API_KEY = process.env.API_KEY || "s2_33e5d129dcd84178afca14a2f05f954a";
+const API_KEY = process.env.API_KEY || "";
 
 // Configuração de sessão
 // Trust proxy (Nginx) para cookies/sessão funcionarem atrás de reverse proxy
