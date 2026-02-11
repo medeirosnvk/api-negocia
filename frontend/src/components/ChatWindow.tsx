@@ -8,7 +8,7 @@ import type { Mensagem, ChatResponse, FormalizacaoResponse } from '../types';
 
 const MENSAGEM_INICIAL: Mensagem = {
   role: 'assistant',
-  text: 'Olá! Sou a LucIA. Vi que você possui uma pendência conosco e estou aqui para te ajudar a regularizar isso da melhor forma possível. Como você está hoje?',
+  text: 'Olá! Eu sou a LucIA, assistente virtual da Cobrance. Estou à disposição para te ajudar no que precisar. Como posso te auxiliar hoje?',
   ts: new Date().toISOString(),
 };
 
