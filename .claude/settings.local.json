@@ -10,7 +10,13 @@
       "Bash(npm run typecheck:*)",
       "Bash(npx tsc:*)",
       "Bash(npx vite build)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDPR1X7uUIXh4JcP1U6DSWvsZHYloxCzlE\" -H \"Content-Type: application/json\" -d '{\"\"\"\"contents\"\"\"\":[{\"\"\"\"parts\"\"\"\":[{\"\"\"\"text\"\"\"\":\"\"\"\"oi\"\"\"\"}]}]}')",
+      "Bash(python3:*)",
+      "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=AIzaSyDPR1X7uUIXh4JcP1U6DSWvsZHYloxCzlE\" -H \"Content-Type: application/json\" -d '{\"\"\"\"contents\"\"\"\":[{\"\"\"\"parts\"\"\"\":[{\"\"\"\"text\"\"\"\":\"\"\"\"oi\"\"\"\"}]}]}')",
+      "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDPR1X7uUIXh4JcP1U6DSWvsZHYloxCzlE\" -H \"Content-Type: application/json\" -d '{\"\"\"\"contents\"\"\"\":[{\"\"\"\"parts\"\"\"\":[{\"\"\"\"text\"\"\"\":\"\"\"\"oi\"\"\"\"}]}]}')",
+      "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=AIzaSyDPR1X7uUIXh4JcP1U6DSWvsZHYloxCzlE\" -H \"Content-Type: application/json\" -d '{\"\"\"\"contents\"\"\"\":[{\"\"\"\"parts\"\"\"\":[{\"\"\"\"text\"\"\"\":\"\"\"\"oi\"\"\"\"}]}]}')",
+      "Bash(curl:*)"
     ]
   }
 }
