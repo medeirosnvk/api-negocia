@@ -618,7 +618,7 @@ Data de hoje: ${hoje}`;
       const response = await axios.post(
         "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         {
-          model: "gemini-2.0-flash",
+          model: "gemini-2.0-flash-lite",
           messages: mensagens,
           temperature: 0.7,
         },
