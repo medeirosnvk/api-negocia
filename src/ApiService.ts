@@ -101,6 +101,10 @@ export async function buscarOfertasCredor(
   diasentrada: number,
 ): Promise<OfertaAPI[]> {
   try {
+    console.log(
+      `[DEBUG] Buscar ofertas com parametros: plano=${plano}, periodicidade=${periodicidade}, diasentrada=${diasentrada}`,
+    );
+
     const response = await axios.get<OfertaAPI[]>(
       `${API_BASE_URL}/credores/oferta-parcelas-lucia`,
       {
