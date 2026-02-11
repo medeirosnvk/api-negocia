@@ -373,7 +373,7 @@ Agora inicie a conversa de forma acolhedora, apresentando-se como LucIA e oferec
    * Gera mensagem de apresentação acolhedora (sem mencionar dívida/negociação)
    */
   private gerarMensagemBoasVindas(): string {
-    return "Olá! Eu sou a LucIA, estou aqui para te ajudar. Como posso te auxiliar hoje?";
+    return "Olá! Eu sou a LucIA, assistente virtual da Cobrance. Estou à disposição para te ajudar no que precisar. Como posso te auxiliar hoje?";
   }
 
   /**
