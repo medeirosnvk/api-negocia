@@ -1,6 +1,6 @@
 import axios from "axios";
 import { CalculadoraAcordo } from "./CalculadoraAcordo.js";
-import { RagService } from "./RagService.js";
+import { RagService } from "../services/RagService.js";
 import {
   ConfiguracaoAcordo,
   CredorAPI,
@@ -11,7 +11,7 @@ import {
   OfertaCalculada,
   ParametrosOferta,
   ResultadoChat,
-} from "./types.js";
+} from "../types/index.js";
 import {
   buscarCredores,
   buscarDividasCredor,
@@ -19,7 +19,7 @@ import {
   formalizarAcordo,
   formatarMoeda,
   validarDocumento,
-} from "./ApiService.js";
+} from "../services/ApiService.js";
 
 /**
  * Motor de negociação com integração a LLM

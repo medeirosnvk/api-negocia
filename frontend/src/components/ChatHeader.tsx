@@ -1,5 +1,5 @@
 import { FileText, RotateCcw, Sun, Moon } from "lucide-react";
-import { useTheme } from "../App";
+import { useTheme } from "../hooks/useTheme";
 import clsx from "clsx";
 
 interface ChatHeaderProps {

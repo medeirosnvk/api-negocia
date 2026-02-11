@@ -3,7 +3,7 @@
  * Copie a estrutura que desejar para usar com a CalculadoraAcordo
  */
 
-import { ConfiguracaoAcordo } from "./types.js";
+import { ConfiguracaoAcordo } from "../types/index.js";
 
 // ========================================
 // EXEMPLO 1: Configuração padrão (do PHP)

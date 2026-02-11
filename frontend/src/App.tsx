@@ -1,14 +1,6 @@
-import { useState, createContext, useContext, useEffect } from 'react';
-import { ChatWindow } from './components/ChatWindow';
-
-export const ThemeContext = createContext({
-  theme: 'dark' as 'dark' | 'light',
-  toggleTheme: () => {},
-});
-
-export function useTheme() {
-  return useContext(ThemeContext);
-}
+import { useState, useEffect } from 'react';
+import { ThemeContext } from './contexts/ThemeContext';
+import { ChatScreen } from './screens/ChatScreen';
 
 function App() {
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
@@ -24,7 +16,7 @@ function App() {
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <div className="h-full lucia-bg noise-overlay flex items-center justify-center p-4 md:p-8">
-        <ChatWindow />
+        <ChatScreen />
       </div>
     </ThemeContext.Provider>
   );

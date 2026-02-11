@@ -17,7 +17,10 @@
       "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDPR1X7uUIXh4JcP1U6DSWvsZHYloxCzlE\" -H \"Content-Type: application/json\" -d '{\"\"\"\"contents\"\"\"\":[{\"\"\"\"parts\"\"\"\":[{\"\"\"\"text\"\"\"\":\"\"\"\"oi\"\"\"\"}]}]}')",
       "Bash(curl -s \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=AIzaSyDPR1X7uUIXh4JcP1U6DSWvsZHYloxCzlE\" -H \"Content-Type: application/json\" -d '{\"\"\"\"contents\"\"\"\":[{\"\"\"\"parts\"\"\"\":[{\"\"\"\"text\"\"\"\":\"\"\"\"oi\"\"\"\"}]}]}')",
       "Bash(curl:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(find:*)",
+      "Bash(git mv:*)",
+      "Bash(npm test:*)"
     ]
   }
 }

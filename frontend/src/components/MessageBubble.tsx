@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Mensagem } from '../types';
 import clsx from 'clsx';
-import { useTheme } from '../App';
+import { useTheme } from '../hooks/useTheme';
 
 interface MessageBubbleProps {
   mensagem: Mensagem;

@@ -3,7 +3,7 @@
  */
 
 import { beforeEach, describe, it, expect } from "@jest/globals";
-import { CalculadoraAcordo } from "../CalculadoraAcordo";
+import { CalculadoraAcordo } from "../core/CalculadoraAcordo";
 import { ConfiguracaoAcordo } from "../types";
 
 describe("CalculadoraAcordo", () => {

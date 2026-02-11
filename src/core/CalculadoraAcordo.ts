@@ -3,7 +3,7 @@ import {
   Parametros,
   ConfiguracaoAcordo,
   OfertaCalculada,
-} from "./types.js";
+} from "../types/index.js";
 
 /**
  * Calcula projeções de dívidas, ofertas de parcelamento e datas de vencimento

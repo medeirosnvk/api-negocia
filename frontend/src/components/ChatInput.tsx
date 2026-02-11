@@ -1,7 +1,7 @@
 import { useState, type KeyboardEvent } from 'react';
 import { ArrowUp } from 'lucide-react';
 import clsx from 'clsx';
-import { useTheme } from '../App';
+import { useTheme } from '../hooks/useTheme';
 
 interface ChatInputProps {
   onEnviar: (mensagem: string) => void;

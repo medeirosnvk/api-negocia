@@ -1,11 +1,11 @@
-import { ChatEngine } from "./ChatEngine.js";
+import { ChatEngine } from "../core/ChatEngine.js";
 import {
   BatchResolverCallbacks,
   BatchResult,
   ConfiguracaoAcordo,
   PendingBatch,
   SessionSnapshot,
-} from "./types.js";
+} from "../types/index.js";
 
 const BATCH_WINDOW_MS = 5_000; // 5 segundos de janela de batching
 const MAX_BATCH_SIZE = 20; // Processar imediatamente se atingir esse limite

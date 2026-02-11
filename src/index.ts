@@ -3,9 +3,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import express, { Request, Response } from "express";
 import session, { SessionOptions } from "express-session";
-import { ChatEngine } from "./ChatEngine.js";
-import { RagService } from "./RagService.js";
-import { formalizarAcordo } from "./ApiService.js";
+import { ChatEngine } from "./core/ChatEngine.js";
+import { RagService } from "./services/RagService.js";
+import { formalizarAcordo } from "./services/ApiService.js";
 import {
   ConfiguracaoAcordo,
   CredorAPI,
@@ -15,7 +15,7 @@ import {
   OfertaAPI,
   ParametrosOferta,
   RequisiçãoAPI,
-} from "./types.js";
+} from "./types/index.js";
 
 // Declarar módulo para estender SessionData
 declare module "express-session" {
@@ -42,7 +42,7 @@ const API_KEY = process.env.API_KEY || "";
 
 // Inicializar RAG Service (singleton)
 const ragService = new RagService(API_KEY);
-const diretorioConhecimento = path.resolve(__dirname, "conhecimento");
+const diretorioConhecimento = path.resolve(__dirname, "data", "conhecimento");
 ragService.inicializar(diretorioConhecimento).catch((err) => {
   console.error("[RAG] Erro ao inicializar:", err);
 });
@@ -223,7 +223,8 @@ app.get("/api/health", (req: Request, res: Response) => {
 
 // Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor LucIA rodando em http://localhost:${PORT}`);
-  console.log(`📝 Interface: http://localhost:5176`);
-  console.log(`💬 API de chat: http://localhost:${PORT}/api/chat`);
+  console.log(
+    `🚀 [BACK-END] Servidor LucIA rodando em http://localhost:${PORT}`,
+  );
+  console.log(`📝 [FRONT-END] Interface LucIA em: http://localhost:5176`);
 });

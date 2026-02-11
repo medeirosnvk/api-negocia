@@ -29,21 +29,58 @@ npx jest src/__tests__/CalculadoraAcordo.test.ts
 
 This is a debt negotiation chatbot (LucIA) built with Express.js and TypeScript.
 
+### Backend Structure (`src/`)
+
+```
+src/
+  core/            - Business logic (ChatEngine, CalculadoraAcordo)
+  services/        - External integrations (ApiService, RagService, MessageBatchService)
+  types/           - Shared TypeScript types and interfaces
+  config/          - Configuration examples
+  data/conhecimento/ - RAG knowledge base (.md files)
+  __tests__/       - Jest tests
+  index.ts         - Express server entry point
+```
+
+### Frontend Structure (`frontend/src/`)
+
+```
+frontend/src/
+  components/      - Reusable UI components (ChatHeader, ChatInput, MessageBubble, MessageList, TypingIndicator)
+  contexts/        - React contexts (ThemeContext)
+  hooks/           - Custom hooks (useTheme)
+  screens/         - Full-screen views (ChatScreen)
+  services/        - API service layer (chatService)
+  types/           - Frontend TypeScript types
+  App.tsx          - Root component with ThemeProvider
+  main.tsx         - Entry point
+```
+
 ### Core Components
 
-**ChatEngine** (`src/ChatEngine.ts`)
+**ChatEngine** (`src/core/ChatEngine.ts`)
 
 - Orchestrates AI-powered debt negotiation conversations
 - Detects user intent: cadence changes ("semanal", "quinzenal"), date requests, budget constraints
-- Integrates with LLM API at `routellm.abacus.ai/v1/chat/completions`
+- Integrates with Gemini LLM API
 - Maintains conversation history via express-session
 
-**CalculadoraAcordo** (`src/CalculadoraAcordo.ts`)
+**CalculadoraAcordo** (`src/core/CalculadoraAcordo.ts`)
 
 - Calculates debt totals with interest (3%/month), fines (2%), and fees (10%)
 - Generates installment offers for 4 cadences: mensal, semanal, quinzenal, diário
 - Handles date adjustments (weekends → business days, respects max vencimento date)
 - Adds R$11.90 boleto fee per installment
+
+**ApiService** (`src/services/ApiService.ts`)
+
+- External API integration with Cobrance API
+- Credential validation, creditor lookup, offer fetching, agreement formalization
+
+**RagService** (`src/services/RagService.ts`)
+
+- RAG (Retrieval-Augmented Generation) with Gemini embeddings
+- In-memory vector store with cosine similarity
 
 **Express Server** (`src/index.ts`)
 
@@ -55,7 +92,7 @@ This is a debt negotiation chatbot (LucIA) built with Express.js and TypeScript.
 ```
 POST /api/chat {mensagem}
     → Express restores session (chat_history, cadencia)
-    → ChatEngine detects intent, recalculates offers if needed
+    → ChatEngine (src/core/) detects intent, recalculates offers if needed
     → CalculadoraAcordo.gerarOfertas() computes payment options
     → LLM generates response with available offers context
     → Session updated, response returned
@@ -65,15 +102,18 @@ POST /api/chat {mensagem}
 
 - `POST /api/chat` - Process negotiation message → `{resposta, status}`
 - `POST /api/limpar-sessao` - Clear session/start new conversation
+- `POST /api/formalizar-acordo` - Formalize accepted agreement
 - `GET /api/ofertas` - Debug: view current offers and cadence
 - `GET /api/health` - Health check
 
 ## Code Conventions
 
 - **Portuguese identifiers** throughout (e.g., `enviarMensagem`, `calcularDiasAtraso`, `historico`)
-- **Types** defined in `src/types.ts`: `Divida`, `ConfiguracaoAcordo`, `OfertaCalculada`, `MensagemChat`
+- **Backend types** defined in `src/types/index.ts`: `Divida`, `ConfiguracaoAcordo`, `OfertaCalculada`, `MensagemChat`
+- **Frontend types** defined in `frontend/src/types/index.ts`: `Mensagem`, `ChatResponse`, `FormalizacaoResponse`
 - **Date format**: dd/mm/yyyy for display, internal calculations use timestamps
 - **Strict TypeScript** with `noImplicitAny` and `strictNullChecks` enabled
+- **Modular organization**: business logic in `core/`, external integrations in `services/`, types in `types/`
 
 ## Environment Variables
 

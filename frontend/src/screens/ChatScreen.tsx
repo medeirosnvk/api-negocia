@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { ChatHeader } from './ChatHeader';
-import { MessageList } from './MessageList';
-import { ChatInput } from './ChatInput';
-import { useTheme } from '../App';
+import { ChatHeader } from '../components/ChatHeader';
+import { MessageList } from '../components/MessageList';
+import { ChatInput } from '../components/ChatInput';
+import { useTheme } from '../hooks/useTheme';
+import { enviarMensagemAPI, limparSessaoAPI, formalizarAcordoAPI } from '../services/chatService';
 import clsx from 'clsx';
-import type { Mensagem, ChatResponse, FormalizacaoResponse } from '../types';
+import type { Mensagem } from '../types';
 
 const MENSAGEM_INICIAL: Mensagem = {
   role: 'assistant',
@@ -12,7 +13,7 @@ const MENSAGEM_INICIAL: Mensagem = {
   ts: new Date().toISOString(),
 };
 
-export function ChatWindow() {
+export function ChatScreen() {
   const [mensagens, setMensagens] = useState<Mensagem[]>([MENSAGEM_INICIAL]);
   const [isTyping, setIsTyping] = useState(false);
   const [inputDisabled, setInputDisabled] = useState(false);
@@ -107,17 +108,7 @@ export function ChatWindow() {
     onSucesso: () => void
   ) => {
     try {
-      const response = await fetch('/api/formalizar-acordo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ iddevedor, plano, periodicidade, diasentrada }),
-      });
-
-      const data: FormalizacaoResponse = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.mensagem || `HTTP ${response.status}`);
-      }
+      const data = await formalizarAcordoAPI(iddevedor, plano, periodicidade, diasentrada);
 
       if (data.sucesso && data.detalhes) {
         const mensagemFormatada = formatarRetornoFormalizacao(data.detalhes);
@@ -146,17 +137,7 @@ export function ChatWindow() {
     setIsTyping(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mensagem: texto }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data: ChatResponse = await response.json();
+      const data = await enviarMensagemAPI(texto);
       setIsTyping(false);
       adicionarMensagem(data.resposta, 'assistant');
 
@@ -189,7 +170,7 @@ export function ChatWindow() {
     }
 
     try {
-      await fetch('/api/limpar-sessao', { method: 'POST' });
+      await limparSessaoAPI();
       setMensagens([MENSAGEM_INICIAL]);
       setInputDisabled(false);
       setPlaceholder('Digite sua mensagem...');

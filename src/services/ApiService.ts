@@ -6,7 +6,7 @@ import {
   DividaDetalhe,
   OfertaAPI,
   ResultadoFormalizacao,
-} from "./types.js";
+} from "../types/index.js";
 
 const API_BASE_URL =
   process.env.API_CREDORES_URL || "https://api.cobrance.online:3030";
