@@ -5,6 +5,7 @@
 // Estado da conversa
 export type EstadoConversa =
   | "apresentacao"
+  | "conversando"
   | "aguardando_documento"
   | "selecionando_credor"
   | "negociando"

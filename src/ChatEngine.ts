@@ -380,18 +380,43 @@ Agora inicie a conversa de forma acolhedora, apresentando-se como LucIA e oferec
    * Processa a resposta do usuário no estado de apresentação.
    * Usa LLM para gerar uma resposta natural que conduz ao pedido de CPF/CNPJ.
    */
-  private async processarRespostaApresentacao(msg: string): Promise<ResultadoChat> {
+  /**
+   * Conversa natural com o usuário antes de pedir documento.
+   * Se detectar CPF/CNPJ na mensagem, já processa como documento.
+   * Se o usuário indicar que precisa de ajuda, guia para o documento.
+   */
+  private async processarConversa(msg: string): Promise<ResultadoChat> {
+    // Se o usuário já enviou um CPF/CNPJ, processar direto
+    const docRegex = /\d{11,14}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2}|\d{2}\.?\d{3}\.?\d{3}\/?\d{4}[-.]?\d{2}/;
+    if (docRegex.test(msg.replace(/\s/g, ""))) {
+      this.estado = "aguardando_documento";
+      return await this.processarDocumento(msg);
+    }
+
     this.historico.push({ role: "user", content: msg });
 
-    // Prompt de sistema para conduzir naturalmente ao CPF/CNPJ
-    const promptApresentacao = `Você é a LucIA, assistente virtual da Cobrance. O usuário acabou de responder à sua saudação inicial.
+    // Detectar se o usuário indicou o que precisa (negociar, pagar, ver pendências, etc.)
+    const m = msg.toLowerCase();
+    const querAjuda = /negoci|pagar|parcela|boleto|acordo|d[ií]vida|pend[eê]ncia|atras|conta|d[eé]bito|regulariz|segunda.?via|quitar/.test(m);
 
-Sua tarefa agora é responder de forma natural e calorosa, e em seguida pedir o CPF ou CNPJ do usuário para que você possa identificá-lo no sistema.
+    const promptConversa = querAjuda
+      ? `Você é a LucIA, assistente virtual da Cobrance. O usuário indicou que precisa de ajuda com algo específico.
+
+Responda de forma acolhedora e natural, e peça o CPF ou CNPJ para que você possa identificá-lo no sistema e ajudá-lo.
 
 Regras:
 - Seja breve e conversacional (máximo 2-3 frases)
-- NÃO mencione "dívida", "pendência", "cobrança", "negociação", "regularização" ou qualquer termo que indique débito
-- Apenas peça o CPF/CNPJ como forma de identificação para poder ajudar
+- NÃO mencione "dívida" ou "cobrança" diretamente
+- Peça o CPF/CNPJ de forma natural como identificação
+- Use tom acolhedor e profissional`
+      : `Você é a LucIA, assistente virtual da Cobrance. Você está conversando com o usuário.
+
+Responda de forma natural e acolhedora ao que o usuário disse. Se fizer sentido no contexto, pergunte em que pode ajudá-lo.
+
+Regras:
+- Seja breve e conversacional (máximo 2-3 frases)
+- NÃO mencione "dívida", "pendência", "cobrança", "negociação" ou "regularização"
+- NÃO peça CPF/CNPJ ainda — apenas converse naturalmente
 - Use tom acolhedor e profissional`;
 
     // Injetar contexto RAG se disponível
@@ -404,7 +429,7 @@ Regras:
     }
 
     const mensagens: MensagemChat[] = [
-      { role: "system", content: promptApresentacao + (contextoRag ? `\n\n${contextoRag}` : "") },
+      { role: "system", content: promptConversa + (contextoRag ? `\n\n${contextoRag}` : "") },
       ...this.historico,
     ];
 
@@ -427,17 +452,21 @@ Regras:
 
       const textoIA =
         response.data?.choices?.[0]?.message?.content ||
-        "Para que eu possa te ajudar da melhor forma, poderia me informar seu CPF ou CNPJ?";
+        "Fico feliz em te atender! Em que posso te ajudar?";
 
       this.historico.push({ role: "assistant", content: textoIA });
-      this.estado = "aguardando_documento";
 
-      return { resposta: textoIA, status: "aguardando_documento" };
+      // Se pediu CPF/CNPJ, transicionar para aguardando_documento
+      if (querAjuda) {
+        this.estado = "aguardando_documento";
+        return { resposta: textoIA, status: "aguardando_documento" };
+      }
+
+      return { resposta: textoIA, status: "conversando" };
     } catch {
-      const fallback = "Que bom ter você aqui! Para que eu possa te ajudar, preciso que me informe seu CPF ou CNPJ.";
+      const fallback = "Fico feliz em te atender! Em que posso te ajudar?";
       this.historico.push({ role: "assistant", content: fallback });
-      this.estado = "aguardando_documento";
-      return { resposta: fallback, status: "aguardando_documento" };
+      return { resposta: fallback, status: "conversando" };
     }
   }
 
@@ -1370,18 +1399,18 @@ Data de hoje: ${hoje}`;
    * Envia mensagem para a IA e retorna resposta
    */
   public async enviarMensagem(msg: string): Promise<ResultadoChat> {
-    // Primeira mensagem: registrar saudação no histórico e processar via LLM
+    // Primeira mensagem: registrar saudação no histórico e conversar naturalmente
     if (!this.apresentacaoEnviada && this.estado === "apresentacao") {
       const saudacao = "Olá! Eu sou a LucIA, assistente virtual da Cobrance. Estou à disposição para te ajudar no que precisar. Como posso te auxiliar hoje?";
       this.historico.push({ role: "assistant", content: saudacao });
       this.apresentacaoEnviada = true;
-      // Processar a mensagem do usuário naturalmente via LLM
-      return await this.processarRespostaApresentacao(msg);
+      this.estado = "conversando";
+      return await this.processarConversa(msg);
     }
 
-    // Estado: apresentacao — processa resposta do usuário e conduz ao CPF/CNPJ
-    if (this.estado === "apresentacao") {
-      return await this.processarRespostaApresentacao(msg);
+    // Estado: conversando — conversa natural, guia para documento quando apropriado
+    if (this.estado === "conversando") {
+      return await this.processarConversa(msg);
     }
 
     // Estado: aguardando_documento
