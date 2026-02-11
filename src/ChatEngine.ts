@@ -1370,12 +1370,13 @@ Data de hoje: ${hoje}`;
    * Envia mensagem para a IA e retorna resposta
    */
   public async enviarMensagem(msg: string): Promise<ResultadoChat> {
-    // Primeira mensagem: retornar apresentação acolhedora
+    // Primeira mensagem: registrar saudação no histórico e processar via LLM
     if (!this.apresentacaoEnviada && this.estado === "apresentacao") {
-      const resposta = this.gerarMensagemBoasVindas();
-      this.historico.push({ role: "assistant", content: resposta });
+      const saudacao = "Olá! Eu sou a LucIA, assistente virtual da Cobrance. Estou à disposição para te ajudar no que precisar. Como posso te auxiliar hoje?";
+      this.historico.push({ role: "assistant", content: saudacao });
       this.apresentacaoEnviada = true;
-      return { resposta, status: "apresentacao" };
+      // Processar a mensagem do usuário naturalmente via LLM
+      return await this.processarRespostaApresentacao(msg);
     }
 
     // Estado: apresentacao — processa resposta do usuário e conduz ao CPF/CNPJ
