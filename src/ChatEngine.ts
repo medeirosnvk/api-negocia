@@ -1,5 +1,6 @@
 import axios from "axios";
 import { CalculadoraAcordo } from "./CalculadoraAcordo.js";
+import { RagService } from "./RagService.js";
 import {
   ConfiguracaoAcordo,
   CredorAPI,
@@ -31,9 +32,13 @@ export class ChatEngine {
   private cadencia: "mensal" | "diario" | "semanal" | "quinzenal" = "mensal";
   private dataEntradaNegociada: string | null = null;
   private postergaLiberada: boolean = false;
+  private ragService: RagService | null = null;
 
-  // Novos campos para fluxo de validação
-  private estado: EstadoConversa = "aguardando_documento";
+  // Campos para fluxo de apresentação
+  private estado: EstadoConversa = "apresentacao";
+  private apresentacaoEnviada: boolean = false;
+
+  // Campos para fluxo de validação
   private credores: CredorAPI[] = [];
   private credorSelecionado: CredorAPI | null = null;
   private ofertasAPI: OfertaAPI[] = [];
@@ -48,10 +53,11 @@ export class ChatEngine {
     diasentrada: 0,
   };
 
-  constructor(config: ConfiguracaoAcordo, apiKey: string) {
+  constructor(config: ConfiguracaoAcordo, apiKey: string, ragService?: RagService) {
     this.calculadora = new CalculadoraAcordo(config);
     this.ofertas = [];
     this.apiKey = apiKey;
+    this.ragService = ragService || null;
   }
 
   public setHistorico(h: MensagemChat[]): void {
@@ -116,6 +122,14 @@ export class ChatEngine {
   public setOfertasAPISemanais(o: OfertaAPI[]): void {
     this.ofertasAPISemanais = o;
     this.ofertasSemanais = o.length > 0 ? this.mapearOfertasAPI(o) : [];
+  }
+
+  public getApresentacaoEnviada(): boolean {
+    return this.apresentacaoEnviada;
+  }
+
+  public setApresentacaoEnviada(v: boolean): void {
+    this.apresentacaoEnviada = v;
   }
 
   public getParametrosOferta(): ParametrosOferta {
@@ -356,10 +370,75 @@ Agora inicie a conversa de forma acolhedora, apresentando-se como LucIA e oferec
   }
 
   /**
-   * Gera mensagem inicial solicitando documento
+   * Gera mensagem de apresentação acolhedora (sem mencionar dívida/negociação)
    */
   private gerarMensagemBoasVindas(): string {
-    return "Olá! Eu sou a LucIA, sua assistente de negociação. Para começarmos, preciso que você informe seu CPF ou CNPJ.";
+    return "Olá! Eu sou a LucIA, estou aqui para te ajudar. Como posso te auxiliar hoje?";
+  }
+
+  /**
+   * Processa a resposta do usuário no estado de apresentação.
+   * Usa LLM para gerar uma resposta natural que conduz ao pedido de CPF/CNPJ.
+   */
+  private async processarRespostaApresentacao(msg: string): Promise<ResultadoChat> {
+    this.historico.push({ role: "user", content: msg });
+
+    // Prompt de sistema para conduzir naturalmente ao CPF/CNPJ
+    const promptApresentacao = `Você é a LucIA, uma assistente virtual simpática e acolhedora. O usuário acabou de responder à sua saudação inicial.
+
+Sua tarefa agora é responder de forma natural e calorosa, e em seguida pedir o CPF ou CNPJ do usuário para que você possa ajudá-lo.
+
+Regras:
+- Seja breve e conversacional (máximo 2-3 frases)
+- NÃO mencione "dívida", "cobrança" ou "negociação" diretamente
+- Conduza naturalmente ao pedido de CPF/CNPJ como forma de identificação para poder ajudar
+- Use tom acolhedor e profissional`;
+
+    // Injetar contexto RAG se disponível
+    let contextoRag = "";
+    if (this.ragService?.estaInicializado()) {
+      const resultados = await this.ragService.buscar(msg, 2);
+      if (resultados.length > 0) {
+        contextoRag = this.ragService.formatarContexto(resultados);
+      }
+    }
+
+    const mensagens: MensagemChat[] = [
+      { role: "system", content: promptApresentacao + (contextoRag ? `\n\n${contextoRag}` : "") },
+      ...this.historico,
+    ];
+
+    try {
+      const response = await axios.post(
+        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        {
+          model: "gemini-2.5-flash-lite",
+          messages: mensagens,
+          temperature: 0.7,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 60000,
+        },
+      );
+
+      const textoIA =
+        response.data?.choices?.[0]?.message?.content ||
+        "Para que eu possa te ajudar da melhor forma, poderia me informar seu CPF ou CNPJ?";
+
+      this.historico.push({ role: "assistant", content: textoIA });
+      this.estado = "aguardando_documento";
+
+      return { resposta: textoIA, status: "aguardando_documento" };
+    } catch {
+      const fallback = "Que bom ter você aqui! Para que eu possa te ajudar, preciso que me informe seu CPF ou CNPJ.";
+      this.historico.push({ role: "assistant", content: fallback });
+      this.estado = "aguardando_documento";
+      return { resposta: fallback, status: "aguardando_documento" };
+    }
   }
 
   /**
@@ -608,12 +687,28 @@ Data de hoje: ${hoje}`;
   private async chamarLLM(mensagemInterna?: string): Promise<ResultadoChat> {
     try {
       // Se houver mensagem interna, adicionar temporariamente
-      const mensagens = mensagemInterna
+      let mensagens: MensagemChat[] = mensagemInterna
         ? [
             ...this.historico,
             { role: "user" as const, content: mensagemInterna },
           ]
-        : this.historico;
+        : [...this.historico];
+
+      // Injetar contexto RAG no estado de negociação
+      if (this.estado === "negociando" && this.ragService?.estaInicializado()) {
+        const consulta = mensagemInterna || this.historico.filter(m => m.role === "user").pop()?.content || "";
+        if (consulta) {
+          const resultados = await this.ragService.buscar(consulta, 3);
+          if (resultados.length > 0) {
+            const contextoRag = this.ragService.formatarContexto(resultados);
+            mensagens = [
+              mensagens[0],
+              { role: "system" as const, content: contextoRag },
+              ...mensagens.slice(1),
+            ];
+          }
+        }
+      }
 
       const response = await axios.post(
         "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
@@ -1275,11 +1370,17 @@ Data de hoje: ${hoje}`;
    * Envia mensagem para a IA e retorna resposta
    */
   public async enviarMensagem(msg: string): Promise<ResultadoChat> {
-    // Primeira mensagem: retornar boas-vindas e solicitar documento
-    if (this.historico.length === 0 && this.estado === "aguardando_documento") {
+    // Primeira mensagem: retornar apresentação acolhedora
+    if (!this.apresentacaoEnviada && this.estado === "apresentacao") {
       const resposta = this.gerarMensagemBoasVindas();
       this.historico.push({ role: "assistant", content: resposta });
-      return { resposta, status: "aguardando_documento" };
+      this.apresentacaoEnviada = true;
+      return { resposta, status: "apresentacao" };
+    }
+
+    // Estado: apresentacao — processa resposta do usuário e conduz ao CPF/CNPJ
+    if (this.estado === "apresentacao") {
+      return await this.processarRespostaApresentacao(msg);
     }
 
     // Estado: aguardando_documento

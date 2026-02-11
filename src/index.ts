@@ -1,7 +1,10 @@
 import "dotenv/config";
+import path from "path";
+import { fileURLToPath } from "url";
 import express, { Request, Response } from "express";
 import session, { SessionOptions } from "express-session";
 import { ChatEngine } from "./ChatEngine.js";
+import { RagService } from "./RagService.js";
 import { formalizarAcordo } from "./ApiService.js";
 import {
   ConfiguracaoAcordo,
@@ -20,6 +23,7 @@ declare module "express-session" {
     chat_history?: MensagemChat[];
     cadencia?: "mensal" | "diario" | "semanal" | "quinzenal";
     estado?: EstadoConversa;
+    apresentacao_enviada?: boolean;
     credores?: CredorAPI[];
     credor_selecionado?: CredorAPI;
     ofertas_api?: OfertaAPI[];
@@ -29,9 +33,19 @@ declare module "express-session" {
   }
 }
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 const API_KEY = process.env.API_KEY || "";
+
+// Inicializar RAG Service (singleton)
+const ragService = new RagService(API_KEY);
+const diretorioConhecimento = path.resolve(__dirname, "conhecimento");
+ragService.inicializar(diretorioConhecimento).catch((err) => {
+  console.error("[RAG] Erro ao inicializar:", err);
+});
 
 // Configuração de sessão
 // Trust proxy (Nginx) para cookies/sessão funcionarem atrás de reverse proxy
@@ -88,7 +102,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     }
 
     // Criar ChatEngine e restaurar estado da sessão
-    const engine = new ChatEngine(configuraçãoExemplo, API_KEY);
+    const engine = new ChatEngine(configuraçãoExemplo, API_KEY, ragService);
 
     if (req.session.chat_history) {
       engine.setHistorico(req.session.chat_history);
@@ -98,6 +112,9 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     }
     if (req.session.estado) {
       engine.setEstado(req.session.estado);
+    }
+    if (req.session.apresentacao_enviada) {
+      engine.setApresentacaoEnviada(req.session.apresentacao_enviada);
     }
     if (req.session.credores) {
       engine.setCredores(req.session.credores);
@@ -125,6 +142,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     req.session.chat_history = engine.historico;
     req.session.cadencia = engine.getCadencia();
     req.session.estado = engine.getEstado();
+    req.session.apresentacao_enviada = engine.getApresentacaoEnviada();
     req.session.credores = engine.getCredores();
     req.session.credor_selecionado = engine.getCredorSelecionado() || undefined;
     req.session.ofertas_api = engine.getOfertasAPI();

@@ -4,6 +4,7 @@
 
 // Estado da conversa
 export type EstadoConversa =
+  | "apresentacao"
   | "aguardando_documento"
   | "selecionando_credor"
   | "negociando"
@@ -114,6 +115,7 @@ export interface SessionSnapshot {
   chat_history?: MensagemChat[];
   cadencia?: "mensal" | "diario" | "semanal" | "quinzenal";
   estado?: EstadoConversa;
+  apresentacao_enviada?: boolean;
   credores?: CredorAPI[];
   credor_selecionado?: CredorAPI;
   ofertas_api?: OfertaAPI[];
