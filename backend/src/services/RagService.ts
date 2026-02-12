@@ -199,11 +199,10 @@ export class RagService {
       }));
 
       const response = await axios.post(
-        "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:batchEmbedContents",
+        `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:batchEmbedContents?key=${this.apiKey}`,
         { requests },
         {
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
             "Content-Type": "application/json",
           },
           timeout: 30000,
