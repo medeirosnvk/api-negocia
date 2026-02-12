@@ -22,7 +22,12 @@
       "Bash(git mv:*)",
       "Bash(npm test:*)",
       "Bash(ls:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(wc:*)",
+      "mcp__context7__resolve-library-id",
+      "WebSearch",
+      "WebFetch(domain:js.langchain.com)",
+      "Bash(grep:*)"
     ]
   }
 }
