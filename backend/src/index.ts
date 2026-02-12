@@ -41,8 +41,10 @@ const PORT = process.env.PORT || 3001;
 const API_KEY = process.env.API_KEY || "";
 
 // Inicializar RAG Service (singleton)
-const ragService = new RagService(API_KEY);
-const diretorioConhecimento = path.resolve(__dirname, "data", "conhecimento");
+// Usar sempre src/data/conhecimento (arquivos .md não são copiados pelo tsc para dist/)
+const raizBackend = path.resolve(__dirname, "..");
+const diretorioConhecimento = path.resolve(raizBackend, "src", "data", "conhecimento");
+const ragService = new RagService(API_KEY, path.resolve(raizBackend, ".cache-embeddings.json"));
 ragService.inicializar(diretorioConhecimento).catch((err) => {
   console.error("[RAG] Erro ao inicializar:", err);
 });

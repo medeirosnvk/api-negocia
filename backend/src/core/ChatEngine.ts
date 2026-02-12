@@ -492,8 +492,8 @@ Regras:
       const resposta =
         "Boa notícia! Não encontrei nenhuma pendência em seu nome. Se você recebeu uma comunicação nossa, pode ter sido um engano ou a situação já foi regularizada. Posso ajudar com mais alguma coisa?";
       this.historico.push({ role: "assistant", content: resposta });
-      this.estado = "encerrado";
-      return { resposta, status: "encerrado" };
+      this.estado = "conversando";
+      return { resposta, status: "conversando" };
     }
 
     this.credores = credores;
@@ -569,10 +569,10 @@ Regras:
 
     if (this.ofertasAPI.length === 0) {
       const resposta =
-        "No momento não temos ofertas de negociação disponíveis para esta pendência. Por favor, entre em contato conosco através de nossos outros canais de atendimento.";
+        "No momento não temos ofertas de negociação disponíveis para esta pendência. Posso te ajudar com algo mais?";
       this.historico.push({ role: "assistant", content: resposta });
-      this.estado = "encerrado";
-      return { resposta, status: "encerrado" };
+      this.estado = "conversando";
+      return { resposta, status: "conversando" };
     }
 
     // Mapear ofertas mensais da API para o formato interno
@@ -1423,13 +1423,14 @@ Data de hoje: ${hoje}`;
       return await this.processarSelecaoCredor(msg);
     }
 
-    // Estado: encerrado
+    // Estado: encerrado (acordo formalizado) — permanece disponível para dúvidas
     if (this.estado === "encerrado") {
-      return {
-        resposta:
-          "Esta conversa foi encerrada. Para iniciar uma nova negociação, limpe a sessão.",
-        status: "encerrado",
-      };
+      this.historico.push({ role: "user", content: msg });
+      this.historico.push({
+        role: "system",
+        content: "O acordo já foi formalizado com sucesso. O cliente está fazendo uma pergunta adicional. Responda de forma acolhedora e útil. Se ele quiser negociar outra pendência, oriente a limpar a sessão para iniciar um novo atendimento.",
+      });
+      return await this.chamarLLM();
     }
 
     // Estado: negociando (fluxo principal)
