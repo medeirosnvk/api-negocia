@@ -38,7 +38,7 @@ export class RagService {
 
     this.embeddings = new GoogleGenerativeAIEmbeddings({
       apiKey: key,
-      modelName: "text-embedding-004",
+      modelName: "gemini-embedding-001",
     });
 
     const arquivos = await this.listarArquivosMd(diretorio);
