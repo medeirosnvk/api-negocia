@@ -184,7 +184,7 @@ export class RagService {
   }
 
   /**
-   * Gera embeddings em batch via Gemini text-embedding-004
+   * Gera embeddings em batch via Gemini text-embedding-004 (endpoint OpenAI-compatible)
    */
   private async gerarEmbeddingsBatch(textos: string[]): Promise<number[][]> {
     const batchSize = 100;
@@ -193,24 +193,23 @@ export class RagService {
     for (let i = 0; i < textos.length; i += batchSize) {
       const batch = textos.slice(i, i + batchSize);
 
-      const requests = batch.map((texto) => ({
-        model: "models/text-embedding-004",
-        content: { parts: [{ text: texto }] },
-      }));
-
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:batchEmbedContents?key=${this.apiKey}`,
-        { requests },
+        "https://generativelanguage.googleapis.com/v1beta/openai/embeddings",
+        {
+          model: "text-embedding-004",
+          input: batch,
+        },
         {
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${this.apiKey}`,
           },
           timeout: 30000,
         },
       );
 
-      const embeddings = response.data.embeddings.map(
-        (e: { values: number[] }) => e.values,
+      const embeddings = response.data.data.map(
+        (e: { embedding: number[] }) => e.embedding,
       );
       allEmbeddings.push(...embeddings);
     }
