@@ -15,14 +15,12 @@ interface ChunkEmbedding {
  */
 export class RagService {
   private chunks: ChunkEmbedding[] = [];
-  private embeddings: GoogleGenerativeAIEmbeddings;
+  private embeddings: GoogleGenerativeAIEmbeddings | null = null;
+  private apiKey: string;
   private inicializado = false;
 
   constructor(apiKey: string, _cacheArquivo?: string) {
-    this.embeddings = new GoogleGenerativeAIEmbeddings({
-      apiKey,
-      modelName: "text-embedding-004",
-    });
+    this.apiKey = apiKey;
   }
 
   /**
@@ -30,6 +28,18 @@ export class RagService {
    */
   async inicializar(diretorio: string): Promise<void> {
     if (this.inicializado) return;
+
+    const key = this.apiKey || process.env.GOOGLE_API_KEY;
+    if (!key) {
+      console.warn("[RAG] Nenhuma API key encontrada (API_KEY ou GOOGLE_API_KEY). RAG desativado.");
+      this.inicializado = true;
+      return;
+    }
+
+    this.embeddings = new GoogleGenerativeAIEmbeddings({
+      apiKey: key,
+      modelName: "text-embedding-004",
+    });
 
     const arquivos = await this.listarArquivosMd(diretorio);
     if (arquivos.length === 0) {
@@ -78,7 +88,7 @@ export class RagService {
    * Busca os top-K chunks mais relevantes para uma consulta
    */
   async buscar(consulta: string, topK = 3): Promise<ChunkEmbedding[]> {
-    if (!this.inicializado || this.chunks.length === 0) return [];
+    if (!this.inicializado || this.chunks.length === 0 || !this.embeddings) return [];
 
     const embeddingConsulta = await this.embeddings.embedQuery(consulta);
 
