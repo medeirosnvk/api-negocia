@@ -5,7 +5,7 @@ module.exports = {
     {
       name: "api-negocia-backend",
       script: "dist/index.js",
-      cwd: __dirname,
+      cwd: path.join(__dirname, "backend"),
       exec_mode: "fork",
       instances: 1,
       autorestart: true,

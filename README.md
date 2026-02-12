@@ -1,252 +1,203 @@
-# LucIA - Negociador de Dívidas com IA
+# LucIA - Negociador de Dividas com IA
 
-Converção completa de PHP para TypeScript com melhorias arquiteturais e de funcionamento.
+Chatbot de negociacao de dividas com IA, construido com Express.js + TypeScript (backend) e React + Tailwind CSS (frontend).
 
-## 📁 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 api-negocia/
-├── src/
-│   ├── index.ts                 # Servidor Express principal
-│   ├── types.ts                 # Tipos e interfaces TypeScript
-│   ├── CalculadoraAcordo.ts     # Lógica de cálculo de valores e ofertas
-│   └── ChatEngine.ts            # Motor de negociação com integração LLM
-├── public/
-│   └── index.html               # Interface web
-├── package.json                 # Dependências
-├── tsconfig.json                # Configuração TypeScript
-└── .env.example                 # Variáveis de ambiente
+├── backend/                        # API Express + TypeScript
+│   ├── src/
+│   │   ├── core/                   # Logica de negocio
+│   │   │   ├── ChatEngine.ts       # Motor de IA para negociacao
+│   │   │   └── CalculadoraAcordo.ts # Calculo de dividas e ofertas
+│   │   ├── services/               # Integracoes externas
+│   │   │   ├── ApiService.ts       # API Cobrance
+│   │   │   ├── RagService.ts       # RAG com Gemini embeddings
+│   │   │   └── MessageBatchService.ts
+│   │   ├── types/index.ts          # Tipos TypeScript compartilhados
+│   │   ├── config/                 # Exemplos de configuracao
+│   │   ├── data/conhecimento/      # Base de conhecimento RAG (.md)
+│   │   ├── __tests__/              # Testes Jest
+│   │   └── index.ts                # Servidor Express
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── jest.config.js
+│   └── .env                        # Variaveis de ambiente (nao versionado)
+│
+├── frontend/                       # React + Vite + Tailwind CSS
+│   ├── src/
+│   │   ├── components/             # ChatHeader, ChatInput, MessageBubble, etc.
+│   │   ├── contexts/               # ThemeContext
+│   │   ├── hooks/                  # useTheme
+│   │   ├── screens/                # ChatScreen
+│   │   ├── services/               # chatService
+│   │   └── types/index.ts          # Tipos do frontend
+│   ├── package.json
+│   └── vite.config.ts
+│
+├── documentation/                  # Documentacao geral do projeto
+├── public/                         # Assets estaticos legados
+├── ecosystem.config.cjs            # PM2 config (producao)
+├── package.json                    # Orquestrador (scripts raiz)
+└── CLAUDE.md                       # Instrucoes para Claude Code
 ```
 
-## 🚀 Instalação e Execução
+## Inicio Rapido
 
-### Pré-requisitos
+### Pre-requisitos
 
-- Node.js 16+
-- npm ou yarn
+- Node.js 18+
+- npm
 
-### Instalação
+### Instalacao
 
 ```bash
-cd /Users/kevinmedeiros/Enterprise/Cobrance/api-negocia
-npm install
+# Backend
+cd backend && npm install && cd ..
+
+# Frontend
+cd frontend && npm install && cd ..
 ```
 
-### Desenvolvimento (com hot-reload)
+### Configuracao
+
+Crie `backend/.env`:
+
+```env
+PORT=3001
+API_KEY=sua-chave-llm
+SESSION_SECRET=sua-chave-secreta
+NODE_ENV=development
+```
+
+### Desenvolvimento
 
 ```bash
-npm run dev
+# Terminal 1 - Backend (porta 3001)
+npm run dev:backend
+
+# Terminal 2 - Frontend (porta 5173)
+npm run dev:frontend
 ```
 
-Acesse: `http://localhost:3000`
+Acesse: `http://localhost:5173`
 
-### Build para produção
+### Build para producao
 
 ```bash
-npm run build
-npm start
+npm run build    # Compila backend + frontend
+npm run deploy   # Build + pm2 restart
 ```
 
-## 🔑 Variáveis de Ambiente
-
-Crie um arquivo `.env`:
-
-```
-PORT=3000
-API_KEY=s2_33e5d129dcd84178afca14a2f05f954a
-```
-
-## 📝 Alterações Principais
-
-### 1. **Tipagem Completa**
-
-- Todas as classes e funções com tipos TypeScript
-- Interfaces para configurações, mensagens e ofertas
-- Melhor IDE support e detecção de erros em tempo de compilação
-
-### 2. **Modularização**
-
-- `types.ts`: Tipos compartilhados
-- `CalculadoraAcordo.ts`: Lógica de cálculo isolada
-- `ChatEngine.ts`: Motor de IA isolado
-- `index.ts`: Servidor Express
-
-### 3. **Melhorias de Funcionamento**
-
-#### CalculadoraAcordo
-
-- ✅ Cálculo correto de dias em atraso usando timestamps
-- ✅ Formatação de datas consistente (dd/mm/yyyy)
-- ✅ Suporte completo a 4 periodicidades (mensal, semanal, quinzenal, diário)
-- ✅ Validação de datas máximas de vencimento
-- ✅ Tratamento de fins de semana (ajusta para dia útil)
-
-#### ChatEngine
-
-- ✅ Detecção automática de cadência (semanal, quinzenal, etc.)
-- ✅ Detecção de pedidos de adiamento de entrada
-- ✅ Recalculação dinâmica de ofertas
-- ✅ Histórico persistente via sessão
-- ✅ Integração async com LLM
-- ✅ Tratamento robusto de erros
-
-#### API/Servidor
-
-- ✅ Express.js com TypeScript
-- ✅ Gerenciamento de sessão com `express-session`
-- ✅ Endpoints RESTful claros
-- ✅ CORS configurável
-- ✅ Health check
-- ✅ Logs estruturados
-
-#### Frontend
-
-- ✅ Interface melhorada com Tailwind CSS
-- ✅ Indicador de digitação animado
-- ✅ Relatório exportável
-- ✅ Responsivo para mobile
-- ✅ Tratamento de erros de conexão
-
-## 🔌 Endpoints da API
+## Endpoints da API
 
 ### POST `/api/chat`
 
-Processa uma mensagem de negociação
-
-**Request:**
+Processa uma mensagem de negociacao.
 
 ```json
-{
-  "mensagem": "Oi, tudo bem?"
-}
-```
+// Request
+{ "mensagem": "Qual e o valor a vista?" }
 
-**Response:**
-
-```json
-{
-  "resposta": "Olá! Tudo bem sim...",
-  "status": "negociando" | "acordo_fechado"
-}
+// Response
+{ "resposta": "Ola! O valor a vista e...", "status": "negociando" }
 ```
 
 ### POST `/api/limpar-sessao`
 
-Limpa o histórico e inicia uma nova conversa
+Limpa o historico e inicia nova conversa.
 
-**Response:**
+### POST `/api/formalizar-acordo`
 
-```json
-{
-  "status": "ok"
-}
-```
+Formaliza o acordo aceito pelo devedor.
+
+### GET `/api/ofertas`
+
+Debug: visualiza ofertas e cadencia atuais.
 
 ### GET `/api/health`
 
-Verifica status do servidor
+Health check do servidor.
 
-**Response:**
+## Scripts Disponiveis
 
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-01-26T10:30:00.000Z"
-}
-```
+### Raiz (orquestrador)
 
-## 🧪 Testes de Funcionamento
+| Comando              | Funcao                           |
+| -------------------- | -------------------------------- |
+| `npm run dev:backend`  | Inicia backend em desenvolvimento  |
+| `npm run dev:frontend` | Inicia frontend em desenvolvimento |
+| `npm run build`        | Build backend + frontend           |
+| `npm run deploy`       | Build + pm2 restart                |
+| `npm test`             | Roda testes do backend             |
+| `npm run typecheck`    | Verifica tipos do backend          |
 
-### Teste 1: Cálculo de ofertas
+### Backend (`cd backend`)
 
-```bash
-curl -X GET http://localhost:3000/api/health
-```
+| Comando              | Funcao                          |
+| -------------------- | ------------------------------- |
+| `npm run dev`        | Dev com hot-reload (tsx watch)  |
+| `npm run build`      | Compila TypeScript              |
+| `npm start`          | Roda versao compilada           |
+| `npm test`           | Roda testes Jest                |
+| `npm run typecheck`  | Verifica tipos sem compilar     |
 
-### Teste 2: Negociação básica
+### Frontend (`cd frontend`)
 
-```bash
-curl -X POST http://localhost:3000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"mensagem": "Qual é o valor à vista?"}'
-```
+| Comando              | Funcao                          |
+| -------------------- | ------------------------------- |
+| `npm run dev`        | Dev server Vite (porta 5173)    |
+| `npm run build`      | Build de producao               |
+| `npm run preview`    | Preview do build                |
 
-### Teste 3: Mudança de cadência
+## Logica de Negociacao
 
-```bash
-curl -X POST http://localhost:3000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"mensagem": "Prefiro pagar semanalmente"}'
-```
+A IA (LucIA) segue esta estrategia:
 
-## 📊 Lógica de Negociação
-
-A IA (LucIA) segue esta estratégia:
-
-1. **Abertura**: Apresenta opção à vista
-2. **Sondagem**: Pergunta se cliente prefere à vista ou parcelado
-3. **Flexibilização**:
-   - Se pedir semanal/quinzenal → recalcula ofertas
-   - Se falar de valores → encontra opção que cabe no orçamento
-   - Se pedir adiamento → posterga até data máxima
+1. **Abertura**: Apresenta opcao a vista
+2. **Sondagem**: Pergunta se cliente prefere a vista ou parcelado
+3. **Flexibilizacao**:
+   - Se pedir semanal/quinzenal -> recalcula ofertas
+   - Se falar de valores -> encontra opcao que cabe no orcamento
+   - Se pedir adiamento -> posterga ate data maxima
 4. **Fechamento**: Ao aceitar, formaliza acordo
 
-## 🔄 Fluxo de Dados
+## Fluxo de Dados
 
 ```
-Frontend (index.html)
-    ↓
+Frontend React (localhost:5173)
+    |
 POST /api/chat {mensagem}
-    ↓
-Express Server (index.ts)
-    ↓
+    |
+Express Server (backend/src/index.ts)
+    |
 ChatEngine.enviarMensagem()
-    ├→ Detecta cadência/data
-    ├→ CalculadoraAcordo.gerarOfertas()
-    ├→ Manda para LLM (routellm.abacus.ai)
-    └→ Retorna {resposta, status}
-    ↓
+    |-- Detecta cadencia/data
+    |-- CalculadoraAcordo.gerarOfertas()
+    |-- Envia para LLM com historico e ofertas
+    |-- Retorna {resposta, status}
+    |
 Frontend renderiza resposta
-    ↓
-Sessão salva em servidor
+    |
+Sessao salva no servidor
 ```
 
-## 🛠️ Debugging
+## Documentacao
 
-### Ver histórico de chat
+| Pasta                      | Conteudo                                   |
+| -------------------------- | ------------------------------------------ |
+| `documentation/`           | Docs gerais: quick start, deploy, comandos |
+| `backend/documentation/`   | Migracao PHP->TS, conversao, arquitetura   |
+| `frontend/documentation/`  | Design, componentes React, checklist       |
 
-```javascript
-// No console do navegador
-fetch("/api/chat", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ mensagem: "debug" }),
-})
-  .then((r) => r.json())
-  .then((d) => console.log(d));
-```
+### Leitura recomendada
 
-### Logs do servidor
+1. Este README - Visao geral
+2. `documentation/QUICK-START.md` - Rodar em 5 minutos
+3. `documentation/COMMANDS.md` - Referencia de comandos
+4. `documentation/DEPLOYMENT.md` - Deploy em producao
 
-```bash
-npm run dev 2>&1 | tee server.log
-```
-
-## 📈 Melhorias Futuras
-
-- [ ] Persistência de ofertas em banco de dados
-- [ ] Configuração dinâmica via API
-- [ ] Suporte a múltiplas moedas
-- [ ] Webhook para integração ERP
-- [ ] Dashboard de estatísticas
-- [ ] Autenticação de usuários
-- [ ] Testes unitários com Jest
-- [ ] Documentação Swagger/OpenAPI
-
-## 📄 Licença
+## Licenca
 
 MIT
-
----
-
-**Desenvolvido com ❤️ em TypeScript**

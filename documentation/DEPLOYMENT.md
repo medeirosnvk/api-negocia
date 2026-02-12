@@ -1,27 +1,25 @@
-# 🚀 Deployment Guide - LucIA API
+# Deployment Guide - LucIA API
 
-Instruções para colocar a aplicação em produção.
+Instrucoes para colocar a aplicacao em producao.
 
-## 📋 Pré-requisitos
+## Pre-requisitos
 
-- Node.js 16+ (LTS recomendado)
+- Node.js 18+ (LTS recomendado)
 - npm 8+
-- Acesso ao servidor de produção
-- Domínio/IP configurado
+- Acesso ao servidor de producao
+- Dominio/IP configurado
 
-## 🏗️ Passos de Deployment
+## Passos de Deployment
 
 ### 1. Preparar o Servidor
 
 ```bash
-# Atualizar sistema
 sudo apt update && sudo apt upgrade -y
 
 # Instalar Node.js
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
 
-# Verificar instalação
 node --version
 npm --version
 ```
@@ -32,41 +30,62 @@ npm --version
 cd /var/www
 sudo git clone <seu-repo> api-negocia
 cd api-negocia
-
-# Ou se usando upload manual:
-scp -r /Users/kevinmedeiros/Enterprise/Cobrance/api-negocia user@server:/var/www/
 ```
 
-### 3. Instalar Dependências
+### 3. Instalar Dependencias
 
 ```bash
 cd /var/www/api-negocia
-npm ci  # Use 'ci' em produção em vez de 'install'
+
+# Backend
+cd backend && npm ci && cd ..
+
+# Frontend
+cd frontend && npm ci && cd ..
 ```
 
-### 4. Configurar Variáveis de Ambiente
+### 4. Configurar Variaveis de Ambiente
 
 ```bash
-# Criar arquivo .env
-sudo nano .env
+sudo nano backend/.env
 ```
 
 Adicione:
 
-```
-PORT=3000
+```env
+PORT=3001
 API_KEY=sua_chave_api_aqui
 NODE_ENV=production
 SESSION_SECRET=gere_uma_string_aleatoria_longa_aqui
 ```
 
-### 5. Build para Produção
+### 5. Build para Producao
 
 ```bash
+# Da raiz do projeto
 npm run build
 ```
 
-### 6. Configurar como Serviço Systemd
+Isso compila:
+- Backend: `backend/dist/`
+- Frontend: `frontend/dist/`
+
+### 6. PM2 (Recomendado)
+
+```bash
+sudo npm install -g pm2
+
+# Iniciar com ecosystem
+pm2 start ecosystem.config.cjs
+pm2 startup
+pm2 save
+```
+
+O `ecosystem.config.cjs` ja esta configurado para rodar:
+- Backend a partir de `backend/dist/index.js`
+- Frontend preview a partir de `frontend/`
+
+### 7. Alternativa: Systemd
 
 Crie `/etc/systemd/system/lucia-api.service`:
 
@@ -78,22 +97,17 @@ After=network.target
 [Service]
 Type=simple
 User=www-data
-WorkingDirectory=/var/www/api-negocia
+WorkingDirectory=/var/www/api-negocia/backend
 Environment="NODE_ENV=production"
-EnvironmentFile=/var/www/api-negocia/.env
-ExecStart=/usr/bin/node /var/www/api-negocia/dist/index.js
+EnvironmentFile=/var/www/api-negocia/backend/.env
+ExecStart=/usr/bin/node /var/www/api-negocia/backend/dist/index.js
 Restart=always
 RestartSec=10
-
-# Limites de recursos
 MemoryLimit=512M
-CPUShares=1024
 
 [Install]
 WantedBy=multi-user.target
 ```
-
-Ative o serviço:
 
 ```bash
 sudo systemctl daemon-reload
@@ -102,7 +116,7 @@ sudo systemctl start lucia-api
 sudo systemctl status lucia-api
 ```
 
-### 7. Configurar Nginx como Reverse Proxy
+### 8. Configurar Nginx como Reverse Proxy
 
 Crie `/etc/nginx/sites-available/lucia-api`:
 
@@ -110,8 +124,6 @@ Crie `/etc/nginx/sites-available/lucia-api`:
 server {
     listen 80;
     server_name seu-dominio.com;
-
-    # Redirecionar HTTP para HTTPS (opcional)
     return 301 https://$server_name$request_uri;
 }
 
@@ -119,19 +131,17 @@ server {
     listen 443 ssl http2;
     server_name seu-dominio.com;
 
-    # Certificados SSL (Let's Encrypt)
     ssl_certificate /etc/letsencrypt/live/seu-dominio.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/seu-dominio.com/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
 
-    # Logs
     access_log /var/log/nginx/lucia-api-access.log;
     error_log /var/log/nginx/lucia-api-error.log;
 
-    # Proxy para aplicação Node.js
-    location / {
-        proxy_pass http://127.0.0.1:3000;
+    # API backend
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -140,27 +150,29 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-
-        # Timeouts
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
     }
 
+    # Frontend static files
+    location / {
+        root /var/www/api-negocia/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+
     # Static files caching
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        root /var/www/api-negocia/frontend/dist;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 
-    # Gzip compression
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
     gzip_vary on;
 }
 ```
-
-Ative o site:
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/lucia-api /etc/nginx/sites-enabled/
@@ -168,104 +180,42 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### 8. Configurar SSL (Let's Encrypt)
+### 9. Configurar SSL (Let's Encrypt)
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
 sudo certbot certonly --nginx -d seu-dominio.com
 ```
 
-### 9. Monitoramento e Logs
+### 10. Monitoramento e Logs
 
 ```bash
-# Ver logs da aplicação
+# PM2
+pm2 logs
+pm2 monit
+
+# Systemd
 sudo journalctl -u lucia-api -f
 
-# Ver logs do Nginx
+# Nginx
 sudo tail -f /var/log/nginx/lucia-api-error.log
-sudo tail -f /var/log/nginx/lucia-api-access.log
 
-# Verificar saúde
+# Health check
 curl https://seu-dominio.com/api/health
 ```
 
-## 🔄 Atualizações
-
-Para atualizar o código em produção:
+## Atualizacoes
 
 ```bash
 cd /var/www/api-negocia
 sudo git pull origin main
-npm ci
+cd backend && npm ci && cd ..
+cd frontend && npm ci && cd ..
 npm run build
-sudo systemctl restart lucia-api
+pm2 restart ecosystem.config.cjs
 ```
 
-## 📊 Performance e Escalabilidade
-
-### PM2 (Alternativa ao Systemd)
-
-Se preferir usar PM2:
-
-```bash
-sudo npm install -g pm2
-
-# Criar ecosystem.config.js
-cat > ecosystem.config.js << 'EOF'
-module.exports = {
-  apps: [{
-    name: 'lucia-api',
-    script: './dist/index.js',
-    instances: 'max',
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3000
-    }
-  }]
-};
-EOF
-
-# Iniciar
-pm2 start ecosystem.config.js
-pm2 startup
-pm2 save
-```
-
-### Load Balancing
-
-Para múltiplas instâncias:
-
-```nginx
-upstream lucia_backend {
-    least_conn;
-    server 127.0.0.1:3000;
-    server 127.0.0.1:3001;
-    server 127.0.0.1:3002;
-    server 127.0.0.1:3003;
-}
-
-server {
-    # ... configuração anterior ...
-
-    location / {
-        proxy_pass http://lucia_backend;
-        # ... resto do proxy ...
-    }
-}
-```
-
-## 🚨 Backup e Recuperação
-
-```bash
-# Backup diário
-sudo crontab -e
-
-# Adicione:
-0 2 * * * cd /var/www/api-negocia && tar -czf backup-$(date +\%Y\%m\%d).tar.gz dist/ && mv backup-*.tar.gz /backups/
-```
-
-## 🔒 Segurança
+## Seguranca
 
 ### Firewall
 
@@ -276,9 +226,7 @@ sudo ufw allow 443/tcp
 sudo ufw enable
 ```
 
-### Headers de Segurança (Nginx)
-
-Adicione ao bloco `server {}`:
+### Headers de Seguranca (Nginx)
 
 ```nginx
 add_header X-Frame-Options "SAMEORIGIN" always;
@@ -294,42 +242,19 @@ limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
 
 location /api/ {
     limit_req zone=api_limit burst=20 nodelay;
-    proxy_pass http://127.0.0.1:3000;
+    proxy_pass http://127.0.0.1:3001;
 }
 ```
 
-## 📈 Monitoramento
+## Troubleshooting
 
-### Health Check Setup
-
-```bash
-# Adicione ao Nginx
-location /healthcheck {
-    access_log off;
-    proxy_pass http://127.0.0.1:3000/api/health;
-}
-```
-
-### Alertas (usando curl)
+### Aplicacao nao inicia
 
 ```bash
-# Script de monitoramento
-#!/bin/bash
-while true; do
-    STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://seu-dominio.com/api/health)
-    if [ "$STATUS" != "200" ]; then
-        echo "ALERTA: Serviço down! Status: $STATUS"
-        # Enviar notificação (email, slack, etc)
-    fi
-    sleep 60
-done
-```
+# PM2
+pm2 logs api-negocia-backend --lines 50
 
-## 🆘 Troubleshooting
-
-### Aplicação não inicia
-
-```bash
+# Systemd
 sudo systemctl status lucia-api
 sudo journalctl -u lucia-api -n 50
 ```
@@ -337,35 +262,12 @@ sudo journalctl -u lucia-api -n 50
 ### Porta em uso
 
 ```bash
-sudo lsof -i :3000
+sudo lsof -i :3001
 sudo kill -9 <PID>
 ```
 
-### Problemas de sessão
+### Problemas de sessao
 
-- Verifique arquivo `.env` com SESSION_SECRET
+- Verifique `backend/.env` com SESSION_SECRET
 - Limpe cache do navegador
-- Reinicie a aplicação
-
-### Erro de CORS
-
-- Configure header no Express
-- Adicione ao `src/index.ts`:
-
-```typescript
-app.use(
-  cors({
-    origin: ["https://seu-dominio.com"],
-    credentials: true,
-  }),
-);
-```
-
-## 📞 Suporte
-
-Para problemas, verifique:
-
-1. Logs: `sudo journalctl -u lucia-api -f`
-2. Arquivo `.env`: Variáveis de ambiente corretas
-3. Permissões: `sudo chown -R www-data /var/www/api-negocia`
-4. Versão Node: `node --version` (deve ser 16+)
+- Reinicie a aplicacao

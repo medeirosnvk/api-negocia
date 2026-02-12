@@ -4,7 +4,7 @@ node_modules/
 .pnp.js
 
 # Production
-/dist
+backend/dist/
 /build
 
 # Environment
@@ -29,6 +29,7 @@ yarn-error.log*
 
 # Testing
 /coverage
+backend/coverage/
 
 # Misc
 *.tsbuildinfo

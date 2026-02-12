@@ -1,21 +1,23 @@
 # Quick Start - LucIA Chatbot
 
-Guia rápido para rodar o projeto completo (backend + frontend React).
+Guia rapido para rodar o projeto completo (backend + frontend React).
 
-## Pré-requisitos
+## Pre-requisitos
 
-- Node.js 18+ instalado
-- npm ou yarn
+- Node.js 18+
+- npm
 
-## Instalação
+## Instalacao
 
-### 1. Instalar dependências do backend
+### 1. Instalar dependencias do backend
 
 ```bash
+cd backend
 npm install
+cd ..
 ```
 
-### 2. Instalar dependências do frontend
+### 2. Instalar dependencias do frontend
 
 ```bash
 cd frontend
@@ -23,12 +25,12 @@ npm install
 cd ..
 ```
 
-## Configuração
+## Configuracao
 
-### 1. Criar arquivo .env na raiz
+### Criar arquivo `backend/.env`
 
-```bash
-PORT=3000
+```env
+PORT=3001
 API_KEY=your-llm-api-key
 SESSION_SECRET=your-secret-key-here
 NODE_ENV=development
@@ -36,117 +38,126 @@ NODE_ENV=development
 
 ## Executar
 
-### Opção 1: Dois terminais separados (recomendado para desenvolvimento)
+### Opcao 1: Dois terminais separados (recomendado)
 
 **Terminal 1 - Backend:**
 ```bash
-npm run dev
-# Backend iniciará em http://localhost:3000
+npm run dev:backend
+# Backend iniciara em http://localhost:3001
 ```
 
 **Terminal 2 - Frontend:**
 ```bash
-cd frontend
-npm run dev
-# Frontend iniciará em http://localhost:5173
+npm run dev:frontend
+# Frontend iniciara em http://localhost:5173
 ```
 
 Acesse: `http://localhost:5173`
 
-### Opção 2: Backend + Frontend HTML legado
+### Opcao 2: Comandos diretos nas pastas
 
 ```bash
-npm run dev
-# Acesse http://localhost:3000
+# Terminal 1
+cd backend && npm run dev
+
+# Terminal 2
+cd frontend && npm run dev
 ```
 
 ## Estrutura do Projeto
 
 ```
 api-negocia/
-├── src/                    # Backend TypeScript
-│   ├── index.ts           # Express server
-│   ├── ChatEngine.ts      # IA conversacional
-│   ├── CalculadoraAcordo.ts # Lógica de negociação
-│   └── types.ts           # Tipos TypeScript
-├── frontend/              # Frontend React novo
+├── backend/                # Backend TypeScript
 │   ├── src/
-│   │   ├── components/    # Componentes React
-│   │   ├── App.tsx        # App principal
-│   │   └── types.ts       # Tipos do frontend
-│   ├── vite.config.ts     # Config Vite + Proxy
+│   │   ├── core/           # ChatEngine, CalculadoraAcordo
+│   │   ├── services/       # ApiService, RagService
+│   │   ├── types/          # Tipos TypeScript
+│   │   ├── __tests__/      # Testes Jest
+│   │   └── index.ts        # Express server
+│   ├── package.json
+│   └── .env
+├── frontend/               # Frontend React
+│   ├── src/
+│   │   ├── components/     # Componentes React
+│   │   ├── screens/        # ChatScreen
+│   │   └── App.tsx
+│   ├── vite.config.ts      # Config Vite + Proxy
 │   └── package.json
-├── public/                # Frontend HTML legado
-│   └── index.html
-└── package.json          # Backend package.json
+├── documentation/          # Docs gerais
+├── package.json            # Orquestrador raiz
+└── ecosystem.config.cjs    # PM2 (producao)
 ```
 
-## Scripts Disponíveis
+## Scripts Disponiveis
 
-### Backend (raiz)
+### Raiz (orquestrador)
 ```bash
-npm run dev         # Dev com hot-reload
-npm run build       # Compilar TypeScript
-npm start           # Rodar versão compilada
-npm test            # Rodar testes
-npm run typecheck   # Verificar tipos
+npm run dev:backend    # Dev backend com hot-reload
+npm run dev:frontend   # Dev frontend Vite
+npm run build          # Build backend + frontend
+npm run deploy         # Build + pm2 restart
+npm test               # Testes do backend
+npm run typecheck      # Verificar tipos
 ```
 
-### Frontend (dentro de frontend/)
+### Backend (`cd backend`)
 ```bash
-npm run dev         # Dev server Vite
-npm run build       # Build de produção
-npm run preview     # Preview do build
+npm run dev            # Dev com hot-reload
+npm run build          # Compilar TypeScript
+npm start              # Rodar versao compilada
+npm test               # Rodar testes
+npm run typecheck      # Verificar tipos
+```
+
+### Frontend (`cd frontend`)
+```bash
+npm run dev            # Dev server Vite
+npm run build          # Build de producao
+npm run preview        # Preview do build
 ```
 
 ## URLs
 
 - **Frontend React (dev)**: http://localhost:5173
-- **Backend API**: http://localhost:3000
-- **Frontend HTML legado**: http://localhost:3000
+- **Backend API**: http://localhost:3001
 
-## APIs Disponíveis
+## APIs Disponiveis
 
 - `POST /api/chat` - Enviar mensagem ao chatbot
-- `POST /api/limpar-sessao` - Limpar histórico
+- `POST /api/limpar-sessao` - Limpar historico
+- `POST /api/formalizar-acordo` - Formalizar acordo
 - `GET /api/ofertas` - Ver ofertas atuais (debug)
 - `GET /api/health` - Health check
 
 ## Troubleshooting
 
-### Backend não inicia
-- Verifique se o arquivo `.env` existe
-- Confirme que a porta 3000 está livre
-- Verifique se `API_KEY` está configurada
+### Backend nao inicia
+- Verifique se `backend/.env` existe
+- Confirme que a porta 3001 esta livre
+- Verifique se `API_KEY` esta configurada
 
-### Frontend não conecta ao backend
-- Certifique-se de que o backend está rodando
-- Verifique a configuração do proxy em `frontend/vite.config.ts`
-- Limpe o cache: `rm -rf frontend/node_modules && cd frontend && npm install`
+### Frontend nao conecta ao backend
+- Certifique-se de que o backend esta rodando
+- Verifique a configuracao do proxy em `frontend/vite.config.ts`
+- Limpe o cache: `cd frontend && rm -rf node_modules/.vite && npm run dev`
 
 ### Erros de TypeScript
 ```bash
-npm run typecheck       # Verificar erros
-cd frontend && npm run build  # Build frontend
+cd backend && npm run typecheck   # Verificar erros backend
+cd frontend && npm run build      # Build frontend
 ```
 
-## Design do Frontend React
+## Proximos Passos
 
-O novo frontend é uma réplica moderna do WhatsApp Web:
-- Interface dark com verde (#075E54, #128C7E, #25D366)
-- Background com padrão doodle sutil
-- Bolhas de mensagem: usuário verde claro, bot branco
-- Animações suaves de entrada
-- Totalmente responsivo
-- Indicador de "digitando..." animado
-
-## Próximos Passos
-
-1. Configure suas variáveis de ambiente no `.env`
+1. Configure suas variaveis de ambiente em `backend/.env`
 2. Inicie backend e frontend
 3. Abra o navegador em `http://localhost:5173`
 4. Comece a conversar com a LucIA!
 
 Para mais detalhes:
 - Backend: Leia `CLAUDE.md`
-- Frontend: Leia `FRONTEND-README.md`
+- Comandos: Leia `documentation/COMMANDS.md`
+- Deploy: Leia `documentation/DEPLOYMENT.md`
+- Frontend docs: Veja `frontend/documentation/`
+- Backend docs: Veja `backend/documentation/`

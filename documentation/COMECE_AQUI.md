@@ -1,264 +1,180 @@
-# 🎯 COMEÇAR AQUI - Quick Start Guide
+# Comece Aqui - Quick Start Guide
 
-Bem-vindo ao projeto **LucIA** em TypeScript!
+Bem-vindo ao projeto **LucIA** - chatbot de negociacao de dividas com IA!
 
-## ⚡ Inicio Rápido (5 minutos)
+## Inicio Rapido (5 minutos)
 
-### 1️⃣ Instalar dependências
-
-```bash
-cd /Users/kevinmedeiros/Enterprise/Cobrance/api-negocia
-npm install
-```
-
-### 2️⃣ Rodar em desenvolvimento
+### 1. Instalar dependencias
 
 ```bash
-npm run dev
+# Backend
+cd backend && npm install && cd ..
+
+# Frontend
+cd frontend && npm install && cd ..
 ```
 
-### 3️⃣ Abrir no navegador
+### 2. Configurar ambiente
 
-```
-http://localhost:3000
-```
-
-Pronto! 🎉 A interface estará disponível.
-
----
-
-## 📚 Documentação Completa
-
-- **[README.md](./README.md)** - Visão geral, estrutura, endpoints
-- **[MIGRACAO.md](./MIGRACAO.md)** - Comparação PHP vs TypeScript, mudanças técnicas
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Como colocar em produção
-
----
-
-## 🗂️ Estrutura do Projeto
-
-```
-src/
-├── types.ts              ← Tipos TypeScript compartilhados
-├── CalculadoraAcordo.ts  ← Cálculo de dívidas e ofertas
-├── ChatEngine.ts         ← Motor de IA para negociação
-├── index.ts              ← Servidor Express
-├── test.ts               ← Testes de funcionamento
-└── config.example.ts     ← Exemplos de configuração
-
-public/
-└── index.html            ← Interface web (Tailwind CSS)
-
-package.json              ← Dependências Node.js
-tsconfig.json             ← Configuração TypeScript
-.env.example              ← Variáveis de ambiente
-```
-
----
-
-## 🚀 Principais Comandos
-
-| Comando             | Função                          |
-| ------------------- | ------------------------------- |
-| `npm install`       | Instala dependências            |
-| `npm run dev`       | Inicia em desenvolvimento       |
-| `npm run build`     | Compila TypeScript → JavaScript |
-| `npm start`         | Roda a versão compilada         |
-| `npm run typecheck` | Verifica tipos sem compilar     |
-
----
-
-## ✅ Checklist de Conversão
-
-- [x] Converter `CalculadoraAcordo.php` → `CalculadoraAcordo.ts`
-- [x] Converter `ChatEngine.php` → `ChatEngine.ts`
-- [x] Converter `api.php` → Express em `index.ts`
-- [x] Converter `index.php` → `public/index.html`
-- [x] Criar sistema de tipos (`types.ts`)
-- [x] Melhorar interface web (Tailwind CSS)
-- [x] Adicionar testes automatizados
-- [x] Documentação completa
-- [x] Deployment guide
-
----
-
-## 🔍 O que foi melhorado?
-
-### Código
-
-✅ **Tipagem completa** - Detecção de erros em tempo de compilação
-✅ **Modularização** - Cada classe em seu arquivo
-✅ **Async/Await** - Melhor handling de operações assíncronas
-✅ **Error handling** - Tratamento robusto de erros
-✅ **Interfaces** - Documentação automática de tipos
-
-### Funcionalidade
-
-✅ **Mesma lógica** - Comportamento idêntico ao PHP
-✅ **Performance** - Caching e otimizações
-✅ **Escalabilidade** - Pronto para crescer
-✅ **Segurança** - Validação de tipos e input
-✅ **Manutenibilidade** - Código mais legível e organizado
-
-### Experiência do Usuário
-
-✅ **Interface melhorada** - Design moderno com Tailwind
-✅ **Feedback visual** - Indicador de digitação animado
-✅ **Relatórios** - Exportação de diálogos
-✅ **Responsivo** - Funciona em mobile
-✅ **Confiável** - Tratamento de erros de conexão
-
----
-
-## 🧪 Testar a Aplicação
-
-### Teste 1: Verificar cálculos
-
-```bash
-npx ts-node src/test.ts
-```
-
-Você verá as ofertas geradas para diferentes cadências (mensal, semanal, etc).
-
-### Teste 2: Fazer uma requisição
-
-```bash
-curl -X POST http://localhost:3000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"mensagem": "Qual é a primeira opção?"}'
-```
-
-### Teste 3: Ver saúde do servidor
-
-```bash
-curl http://localhost:3000/api/health
-```
-
----
-
-## 🔑 Variáveis de Ambiente
-
-Crie um arquivo `.env` na raiz:
+Crie `backend/.env`:
 
 ```env
-PORT=3000
-API_KEY=s2_33e5d129dcd84178afca14a2f05f954a
-NODE_ENV=development
+PORT=3001
+API_KEY=sua-chave-api
 SESSION_SECRET=chave-secreta-desenvolvimento
+NODE_ENV=development
 ```
 
----
-
-## 📊 Fluxo de Dados
-
-```
-1. Usuário digita mensagem no navegador
-   ↓
-2. POST /api/chat com a mensagem
-   ↓
-3. Express recebe e cria ChatEngine
-   ↓
-4. ChatEngine detecta mudanças (cadência, datas, etc)
-   ↓
-5. CalculadoraAcordo recalcula ofertas se necessário
-   ↓
-6. ChatEngine chama API LLM com histórico e ofertas
-   ↓
-7. LLM responde com negociação
-   ↓
-8. Response retorna para o frontend
-   ↓
-9. Interface renderiza e salva na sessão
-```
-
----
-
-## 🆘 Problemas Comuns
-
-### Port 3000 já está em uso
+### 3. Rodar em desenvolvimento
 
 ```bash
-# Mude a porta no .env
-PORT=3001
+# Terminal 1 - Backend
+npm run dev:backend
+
+# Terminal 2 - Frontend
+npm run dev:frontend
+```
+
+### 4. Abrir no navegador
+
+```
+http://localhost:5173
+```
+
+Pronto! A interface estara disponivel.
+
+---
+
+## Documentacao Completa
+
+- **[README.md](../README.md)** - Visao geral, estrutura, endpoints
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Como colocar em producao
+- **[COMMANDS.md](./COMMANDS.md)** - Referencia de comandos
+- **Backend docs**: `backend/documentation/` - Migracao PHP->TS
+- **Frontend docs**: `frontend/documentation/` - Design, componentes
+
+---
+
+## Estrutura do Projeto
+
+```
+api-negocia/
+├── backend/                    # API Express + TypeScript
+│   ├── src/
+│   │   ├── core/               # ChatEngine, CalculadoraAcordo
+│   │   ├── services/           # ApiService, RagService
+│   │   ├── types/index.ts      # Tipos compartilhados
+│   │   ├── data/conhecimento/  # Base de conhecimento RAG
+│   │   ├── __tests__/          # Testes Jest
+│   │   └── index.ts            # Servidor Express
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── .env
+├── frontend/                   # React + Vite + Tailwind
+│   ├── src/
+│   │   ├── components/         # ChatHeader, ChatInput, etc.
+│   │   ├── screens/            # ChatScreen
+│   │   └── App.tsx
+│   └── package.json
+├── documentation/              # Docs gerais (este arquivo)
+├── package.json                # Orquestrador raiz
+└── ecosystem.config.cjs        # PM2 (producao)
+```
+
+---
+
+## Principais Comandos
+
+| Comando                | Funcao                          |
+| ---------------------- | ------------------------------- |
+| `npm run dev:backend`  | Inicia backend (hot-reload)     |
+| `npm run dev:frontend` | Inicia frontend (Vite)          |
+| `npm run build`        | Compila backend + frontend      |
+| `npm run deploy`       | Build + pm2 restart             |
+| `npm test`             | Roda testes do backend          |
+| `npm run typecheck`    | Verifica tipos do backend       |
+
+---
+
+## O que foi implementado?
+
+### Backend
+- Tipagem completa com TypeScript strict
+- Modularizacao: `core/`, `services/`, `types/`
+- Motor de IA com deteccao de intencao
+- Calculadora de acordos com 4 cadencias
+- RAG com embeddings Gemini
+- Testes automatizados com Jest
+- API RESTful com sessoes
+
+### Frontend
+- Interface WhatsApp-like com React
+- Design system com Tailwind CSS
+- Componentes reutilizaveis
+- Indicador de digitacao animado
+- Tema dark/light
+- Totalmente responsivo
+
+---
+
+## Testar a Aplicacao
+
+### Teste 1: Health check
+
+```bash
+curl http://localhost:3001/api/health
+```
+
+### Teste 2: Negociacao basica
+
+```bash
+curl -X POST http://localhost:3001/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"mensagem": "Qual e a primeira opcao?"}'
+```
+
+### Teste 3: Rodar testes unitarios
+
+```bash
+cd backend && npm test
+```
+
+---
+
+## Problemas Comuns
+
+### Porta em uso
+
+```bash
+# Mude a porta em backend/.env
+PORT=3002
 
 # Ou mate o processo
-lsof -i :3000
+lsof -i :3001
 kill -9 <PID>
 ```
 
 ### "Cannot find module"
 
 ```bash
-# Reinstale dependências
-rm -rf node_modules
-npm install
+cd backend && rm -rf node_modules && npm install
 ```
 
-### Erro de "Cannot POST /api/chat"
+### Frontend nao conecta ao backend
 
-- Certifique-se que `npm run dev` está rodando
-- Verifique que o servidor escuta na porta correta
-- Abra as DevTools do navegador (F12) e veja se há erros
-
-### API LLM não responde
-
-- Verifique a chave API no `.env`
-- Teste em: `https://routellm.abacus.ai`
-- Se tiver VPN/proxy, configure em `axios`
+- Certifique-se que o backend esta rodando
+- Verifique o proxy em `frontend/vite.config.ts`
 
 ---
 
-## 📖 Próximos Passos
+## Proximos Passos
 
-1. **Configurar banco de dados** - PostgreSQL/MongoDB para históricos
-2. **Adicionar autenticação** - JWT para múltiplos usuários
-3. **Dashboard** - Ver estatísticas de negociações
-4. **Webhooks** - Integrar com ERP/CRM
-5. **Testes** - Jest para cobertura completa
-6. **Monitoring** - Sentry/DataDog para produção
+1. Explore a interface em `http://localhost:5173`
+2. Leia o [README.md](../README.md) para entender a arquitetura
+3. Veja os [COMMANDS.md](./COMMANDS.md) para referencia de comandos
+4. Consulte [DEPLOYMENT.md](./DEPLOYMENT.md) para deploy
 
 ---
 
-## 💡 Dicas
-
-- Abra 2 terminais: um para `npm run dev` e outro para testes
-- Use VS Code para melhor suporte a TypeScript
-- Ative o Prettier para formatação automática
-- Veja os tipos em `src/types.ts` antes de usar as classes
-
----
-
-## 🎓 Entendendo o Código
-
-### Comece por aqui:
-
-1. `src/types.ts` - Veja os tipos
-2. `src/CalculadoraAcordo.ts` - Entenda os cálculos
-3. `src/ChatEngine.ts` - Veja a lógica de IA
-4. `src/index.ts` - Veja os endpoints
-
-### Depois explore:
-
-- `public/index.html` - Interface web
-- `src/config.example.ts` - Diferentes cenários
-
----
-
-## 📞 Suporte
-
-Qualquer dúvida:
-
-1. Veja a documentação em README.md
-2. Verifique MIGRACAO.md para mudanças do PHP
-3. Consulte os logs: `npm run dev 2>&1 | head -20`
-4. Abra DevTools no navegador (F12)
-
----
-
-## ✨ Versão Final
-
-**Projeto:** LucIA - Negociador de Dívidas com IA
-**Status:** ✅ Totalmente convertido e funcional em TypeScript
-**Pronto para:** Desenvolvimento, testes e produção
-
-Divirta-se! 🚀
+**Projeto:** LucIA - Negociador de Dividas com IA
+**Status:** Totalmente funcional (backend + frontend)
