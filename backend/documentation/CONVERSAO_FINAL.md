@@ -291,7 +291,7 @@ Criar arquivo `.env`:
 
 ```env
 PORT=3000
-API_KEY=s2_33e5d129dcd84178afca14a2f05f954a
+API_KEY=sua-api-key
 NODE_ENV=development
 SESSION_SECRET=chave-secreta-desenvolvimento
 ```
