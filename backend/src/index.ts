@@ -155,9 +155,20 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     res.json(resultado);
   } catch (error) {
     console.error("Erro ao processar mensagem:", error);
+
+    const errorMessage = error instanceof Error ? error.message : "Desconhecido";
+
+    if (errorMessage.includes("503") || errorMessage.includes("UNAVAILABLE") || errorMessage.includes("high demand")) {
+      res.status(503).json({
+        resposta: "Estamos enfrentando um pico de alta demanda no momento. Por favor, aguarde alguns instantes e tente novamente. 🙏",
+        status: "erro_temporario",
+      });
+      return;
+    }
+
     res.status(500).json({
       erro: "Erro ao processar mensagem",
-      detalhes: error instanceof Error ? error.message : "Desconhecido",
+      detalhes: errorMessage,
     });
   }
 });
