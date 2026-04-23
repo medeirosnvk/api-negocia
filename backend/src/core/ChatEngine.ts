@@ -279,7 +279,22 @@ Regras:
       }
 
       return { resposta: textoIA, status: "conversando" };
-    } catch {
+    } catch (err) {
+      console.error(
+        "[LLM] Falha em processarConversa:",
+        axios.isAxiosError(err)
+          ? `HTTP ${err.response?.status} – ${JSON.stringify(err.response?.data || err.message)}`
+          : err,
+      );
+      // Sem LLM ainda avançamos o estado quando o usuário sinalizou intenção
+      // de negociar — assim evitamos o loop do "Fico feliz em te atender".
+      if (querAjuda) {
+        const fallback =
+          "Claro! Para te ajudar, preciso te identificar. Pode me informar seu CPF ou CNPJ, por favor?";
+        this.historico.push({ role: "assistant", content: fallback });
+        this.estado = "aguardando_documento";
+        return { resposta: fallback, status: "aguardando_documento" };
+      }
       const fallback = "Fico feliz em te atender! Em que posso te ajudar?";
       this.historico.push({ role: "assistant", content: fallback });
       return { resposta: fallback, status: "conversando" };
