@@ -184,6 +184,23 @@ app.post("/api/chat", async (req: Request, res: Response) => {
       return;
     }
 
+    // Rate limit (Groq/Gemini TPM) — devolve resposta conversacional em vez
+    // de 500 para não travar a conversa no frontend.
+    if (
+      errorMessage.includes("429") ||
+      errorMessage.includes("rate_limit") ||
+      errorMessage.includes("RESOURCE_EXHAUSTED") ||
+      errorMessage.includes("tokens per minute") ||
+      errorMessage.includes("Rate limit")
+    ) {
+      res.status(429).json({
+        resposta:
+          "Estou processando muitas mensagens agora. Espera uns instantes e tenta de novo, por favor.",
+        status: "erro_temporario",
+      });
+      return;
+    }
+
     res.status(500).json({
       erro: "Erro ao processar mensagem",
       detalhes: errorMessage,

@@ -7,6 +7,12 @@ export async function enviarMensagemAPI(texto: string): Promise<ChatResponse> {
     body: JSON.stringify({ mensagem: texto }),
   });
 
+  // 429 (rate limit) e 503 (indisponibilidade temporária) vêm com um body
+  // conversacional que deve ser mostrado ao usuário — não jogar erro.
+  if (response.status === 429 || response.status === 503) {
+    return response.json();
+  }
+
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
   }

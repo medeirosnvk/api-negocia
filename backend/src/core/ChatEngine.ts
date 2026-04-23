@@ -566,6 +566,18 @@ Data de hoje: ${hoje}.
           ]
         : [...this.historico];
 
+      // Enxuga o histórico antes de enviar ao LLM para caber no TPM:
+      //  - Preserva TODOS os system messages (prompt inicial + reforços de
+      //    data/ofertas que acabaram de ser injetados).
+      //  - Mantém apenas as últimas N mensagens user/assistant (janela
+      //    deslizante). Mensagens mais antigas são descartadas — o LLM ainda
+      //    vê contexto suficiente para continuar a negociação.
+      const MAX_TURNOS_HISTORICO = 16; // 16 msgs ≈ 8 pares user/assistant
+      const systemMsgs = mensagens.filter((m) => m.role === "system");
+      const naoSystemMsgs = mensagens.filter((m) => m.role !== "system");
+      const recentes = naoSystemMsgs.slice(-MAX_TURNOS_HISTORICO);
+      mensagens = [...systemMsgs, ...recentes];
+
       // Reinjetar data/dia-da-semana atual a cada chamada (o prompt salvo no
       // histórico tem a data do momento em que a negociação iniciou e pode
       // ficar defasado caso o atendimento atravesse a meia-noite).
@@ -1363,12 +1375,36 @@ Data de hoje: ${hoje}.
       throw new Error("Nenhum credor selecionado para formalizar");
     }
 
-    const resultado = await formalizarAcordo({
+    // À vista (plano=1) é pagamento único — periodicidade não se aplica.
+    // Mandar periodicidade=30 junto disparava "Cannot read properties of
+    // undefined (reading 'plano_semanal')" na rota registro-master-acordo-v2.
+    const periodicidadeEfetiva =
+      plano === 1 ? 0 : this.parametrosOferta.periodicidade;
+
+    let resultado = await formalizarAcordo({
       iddevedor: this.credorSelecionado.iddevedor,
       plano,
-      periodicidade: this.parametrosOferta.periodicidade,
+      periodicidade: periodicidadeEfetiva,
       diasentrada: this.parametrosOferta.diasentrada,
     });
+
+    // Retry defensivo: se o erro for justamente o "plano_semanal" e foi a
+    // primeira tentativa para à vista com periodicidade=0, tenta com a
+    // periodicidade original (30) — caso a API espere isso em vez disso.
+    if (
+      !resultado.sucesso &&
+      plano === 1 &&
+      periodicidadeEfetiva === 0 &&
+      JSON.stringify(resultado.detalhes || "").includes("plano_semanal")
+    ) {
+      console.log("[FORMALIZAR] retry com periodicidade original para à vista");
+      resultado = await formalizarAcordo({
+        iddevedor: this.credorSelecionado.iddevedor,
+        plano,
+        periodicidade: this.parametrosOferta.periodicidade,
+        diasentrada: this.parametrosOferta.diasentrada,
+      });
+    }
 
     if (resultado.sucesso) {
       this.estado = "encerrado";
@@ -1402,14 +1438,27 @@ Data de hoje: ${hoje}.
     }
 
     // Erro na formalização
+    console.error(
+      `[FORMALIZAR] falhou — plano=${plano} periodicidade=${periodicidadeEfetiva} diasentrada=${this.parametrosOferta.diasentrada} | motivo: ${resultado.mensagem}`,
+    );
     this.historico.push({
       role: "system",
       content: `Houve um erro ao formalizar o acordo: ${resultado.mensagem}. Informe ao cliente que houve um problema técnico e peça para tentar novamente ou entrar em contato por outro canal.`,
     });
 
-    const respostaLLM = await this.chamarLLM();
+    // Se o LLM falhar (TPM estourado, etc), devolve uma resposta fallback
+    // em vez de propagar 500 pro frontend.
+    let respostaTexto =
+      "Não consegui concluir a formalização no momento. Por favor, tente novamente em alguns instantes ou entre em contato com a Cobrance.";
+    try {
+      const respostaLLM = await this.chamarLLM();
+      respostaTexto = respostaLLM.resposta;
+    } catch (err) {
+      console.error("[FORMALIZAR] LLM indisponível no erro:", err);
+    }
+
     return {
-      resposta: respostaLLM.resposta,
+      resposta: respostaTexto,
       status: "erro_formalizacao" as const,
       iddevedor: this.credorSelecionado.iddevedor,
       plano,
