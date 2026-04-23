@@ -1380,20 +1380,12 @@ Data de hoje: ${hoje}.
       const urlBoleto = terceiraEtapa?.urlBoleto as string | undefined;
       const pixCopiaECola = terceiraEtapa?.pixCopiaECola as string | undefined;
 
-      let conteudoPagamento =
-        "O acordo foi formalizado com sucesso no sistema.";
-      if (urlBoleto) {
-        conteudoPagamento += `\nLink do boleto: ${urlBoleto}`;
-      }
-      if (pixCopiaECola) {
-        conteudoPagamento += `\nPIX Copia e Cola: ${pixCopiaECola}`;
-      }
-      conteudoPagamento +=
-        "\nInforme ao cliente que o acordo foi registrado com sucesso e apresente o link do boleto e o código PIX Copia e Cola para pagamento.";
-
+      // IMPORTANTE: o frontend já renderiza o boleto/PIX como card separado.
+      // Aqui pedimos ao LLM apenas uma confirmação curta e acolhedora, SEM
+      // colar URL ou código PIX (senão a bolha vira um paredão de texto).
       this.historico.push({
         role: "system",
-        content: conteudoPagamento,
+        content: `Acordo formalizado com sucesso. Responda com UMA frase curta e acolhedora confirmando a formalização e informando ao cliente que os dados de pagamento (boleto e PIX) estão disponíveis logo abaixo. NÃO inclua URLs, links ou códigos PIX na sua resposta — isso é apresentado pelo app em um painel separado. Exemplo: "Prontinho, Michelangelo! Seu acordo foi formalizado. Logo abaixo você encontra o boleto e o PIX para realizar o pagamento."`,
       });
 
       const respostaLLM = await this.chamarLLM();

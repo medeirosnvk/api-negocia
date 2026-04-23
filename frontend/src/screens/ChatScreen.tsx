@@ -32,91 +32,24 @@ export function ChatScreen() {
     setMensagens((prev) => [...prev, novaMensagem]);
   };
 
-  const formatarRetornoFormalizacao = (
-    detalhes: Record<string, unknown>,
-  ): string => {
-    const primeiraEtapa = detalhes.primeiraEtapaResponse as {
-      iddevedor?: number;
-      plano?: number;
-      idcredor?: number;
-      total_geral?: number;
-      valor_parcela?: string;
-      ultimaDataVencimento?: string;
-      vencimentosParcelas?: Array<{
-        vencimento: string;
-        valorParcelaAtual: string;
-      }>;
-    };
-
-    const terceiraEtapa = detalhes.terceiraEtapaResponse as {
-      urlBoleto?: string;
-      urlQrCode?: string;
-      urlQrCodeBase64?: string;
-      pixCopiaECola?: string;
-    };
-
-    let mensagem = "✅ **Acordo formalizado com sucesso!**\n\n";
-
-    if (primeiraEtapa) {
-      mensagem += "📋 **Detalhes do Acordo:**\n";
-      if (primeiraEtapa.iddevedor) {
-        mensagem += `• ID Devedor: ${primeiraEtapa.iddevedor}\n`;
-      }
-      if (primeiraEtapa.plano) {
-        mensagem += `• Plano: ${primeiraEtapa.plano}\n`;
-      }
-      if (primeiraEtapa.idcredor) {
-        mensagem += `• ID Credor: ${primeiraEtapa.idcredor}\n`;
-      }
-      if (primeiraEtapa.total_geral) {
-        mensagem += `• Total Geral: R$ ${parseFloat(primeiraEtapa.total_geral.toString()).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
-      }
-      if (primeiraEtapa.valor_parcela) {
-        mensagem += `• Valor da Parcela: R$ ${parseFloat(primeiraEtapa.valor_parcela).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
-      }
-      if (primeiraEtapa.ultimaDataVencimento) {
-        const dataFormatada = new Date(
-          primeiraEtapa.ultimaDataVencimento,
-        ).toLocaleDateString("pt-BR");
-        mensagem += `• Última Data de Vencimento: ${dataFormatada}\n`;
-      }
-      if (
-        primeiraEtapa.vencimentosParcelas &&
-        primeiraEtapa.vencimentosParcelas.length > 0
-      ) {
-        mensagem += "\n📅 **Vencimentos das Parcelas:**\n";
-        primeiraEtapa.vencimentosParcelas.forEach((parcela, index) => {
-          const dataFormatada = new Date(parcela.vencimento).toLocaleDateString(
-            "pt-BR",
-          );
-          const valorFormatado = parseFloat(
-            parcela.valorParcelaAtual,
-          ).toLocaleString("pt-BR", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          });
-          mensagem += `  ${index + 1}. ${dataFormatada} - R$ ${valorFormatado}\n`;
-        });
-      }
-    }
-
-    if (terceiraEtapa) {
-      mensagem += "\n💳 **Informações de Pagamento:**\n";
-      if (terceiraEtapa.urlBoleto) {
-        mensagem += `• Boleto: ${terceiraEtapa.urlBoleto}\n`;
-      }
-      if (terceiraEtapa.pixCopiaECola) {
-        mensagem += `\n🔐 **PIX - Copia e Cola:**\n${terceiraEtapa.pixCopiaECola}\n`;
-      }
-      if (terceiraEtapa.urlQrCode) {
-        mensagem += `\n📱 **QR Code PIX:**\n${terceiraEtapa.urlQrCode}\n`;
-      }
-    }
-
-    mensagem +=
-      "\n⚠️ **Importante:** Guarde estas informações para realizar o pagamento.";
-
-    return mensagem;
+  const adicionarPaymentCard = (urlBoleto?: string, pixCopiaECola?: string) => {
+    if (!urlBoleto && !pixCopiaECola) return;
+    // Anexa o card à última mensagem do assistente quando possível —
+    // assim fica visualmente ligado ao "Acordo formalizado!" da LucIA.
+    setMensagens((prev) => {
+      if (prev.length === 0) return prev;
+      const idxUltimoAssistant = [...prev]
+        .reverse()
+        .findIndex((m) => m.role === "assistant");
+      if (idxUltimoAssistant === -1) return prev;
+      const realIdx = prev.length - 1 - idxUltimoAssistant;
+      const copia = [...prev];
+      copia[realIdx] = {
+        ...copia[realIdx],
+        payment: { urlBoleto, pixCopiaECola },
+      };
+      return copia;
+    });
   };
 
   const formalizarAcordo = async (
@@ -135,8 +68,14 @@ export function ChatScreen() {
       );
 
       if (data.sucesso && data.detalhes) {
-        const mensagemFormatada = formatarRetornoFormalizacao(data.detalhes);
-        adicionarMensagem(mensagemFormatada, "assistant");
+        const terceira = data.detalhes.terceiraEtapaResponse as
+          | { urlBoleto?: string; pixCopiaECola?: string }
+          | undefined;
+        adicionarMensagem(
+          "Prontinho! Seu acordo foi formalizado com sucesso. Os dados de pagamento estão logo abaixo.",
+          "assistant",
+        );
+        adicionarPaymentCard(terceira?.urlBoleto, terceira?.pixCopiaECola);
         onSucesso();
       } else {
         setIsTyping(false);
@@ -165,20 +104,11 @@ export function ChatScreen() {
       setIsTyping(false);
       adicionarMensagem(data.resposta, "assistant");
 
-      // Backend já formalizou internamente — apenas anexar detalhes de pagamento
+      // Backend já formalizou internamente — anexa o card de pagamento à
+      // última bolha da LucIA (visual limpo, sem paredão de texto).
       if (data.status === "acordo_formalizado") {
-        const partes: string[] = [];
-        if (data.urlBoleto) {
-          partes.push(`🔗 **Boleto:** ${data.urlBoleto}`);
-        }
-        if (data.pixCopiaECola) {
-          partes.push(`🔐 **PIX Copia e Cola:**\n${data.pixCopiaECola}`);
-        }
-        if (partes.length > 0) {
-          adicionarMensagem(
-            `✅ **Acordo formalizado com sucesso!**\n\n${partes.join("\n\n")}\n\n⚠️ Guarde estas informações para realizar o pagamento.`,
-            "assistant",
-          );
+        if (data.urlBoleto || data.pixCopiaECola) {
+          adicionarPaymentCard(data.urlBoleto, data.pixCopiaECola);
         } else {
           adicionarMensagem(
             "⚠️ O acordo foi formalizado, mas não recebemos os dados de pagamento. Entre em contato com a Cobrance.",

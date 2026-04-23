@@ -2,6 +2,10 @@ export interface Mensagem {
   role: "user" | "assistant";
   text: string;
   ts: string;
+  payment?: {
+    urlBoleto?: string;
+    pixCopiaECola?: string;
+  };
 }
 
 export interface ChatResponse {

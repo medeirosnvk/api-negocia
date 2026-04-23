@@ -2,6 +2,7 @@ import React from "react";
 import type { Mensagem } from "../types";
 import clsx from "clsx";
 import { useTheme } from "../hooks/useTheme";
+import { PaymentCard } from "./PaymentCard";
 
 interface MessageBubbleProps {
   mensagem: Mensagem;
@@ -100,6 +101,12 @@ export function MessageBubble({ mensagem }: MessageBubbleProps) {
         >
           {formatarTexto(mensagem.text, isLight)}
         </p>
+        {mensagem.payment && (
+          <PaymentCard
+            urlBoleto={mensagem.payment.urlBoleto}
+            pixCopiaECola={mensagem.payment.pixCopiaECola}
+          />
+        )}
         <div
           className={clsx(
             "text-[10px] mt-1.5 text-right font-mono tracking-wider",
