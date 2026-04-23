@@ -1553,14 +1553,42 @@ Data de hoje: ${hoje}.
 
     // 4. Detectar aceite -> formalizar automaticamente
     const m = msg.toLowerCase();
-    // Termos fortes de aceite. Evita apenas "sim"/"ok"/"tá" isolados por
-    // serem ambíguos (o cliente pode estar só confirmando uma informação).
+    // Termos fortes de aceite (não ambíguos).
     const aceiteRegex =
       /\baceito\b|\baceita(?:r|do|mos)?\b|\bfechad[oa]\b|\bfecha(?:r|mos)?\b|\bfechou\b|\bconfirmo\b|\bconfirma(?:r|do)\b|\bpode\s*(?:ser|gerar|mandar|enviar|formalizar|emitir|ir)\b|\bgerar?\s*(?:o\s*)?(?:boleto|acordo|pix|acordo)\b|\bemiti(?:r|a)\s*(?:o\s*)?boleto\b|\bmanda(?:r)?\b|\bbora\b|\bvamos\s*(?:la|lá|nessa|fazer|fechar|formalizar)\b|\bok\s*pode\s*(?:ser|gerar|mandar)\b|\btopo\b|\bt[aá]\s*(?:bom|certo|otimo|ótimo|fechado)\b|\bbeleza\b|\bfaz\s*a[íi]\b|\bfico\s*com\s*(?:esse|essa)\b|\bprefiro\s*(?:esse|essa)\b|\bquero\s*(?:esse|essa|essa\s*op[cç][aã]o)\b/i;
-    if (
-      aceiteRegex.test(m) ||
-      resultado.resposta.toLowerCase().includes("formalizando")
-    ) {
+
+    // Aceite contextual: quando a última mensagem do assistente TERMINA
+    // pedindo confirmação ("correto?", "pode ser?", "confirma?"), tratar
+    // "ok/sim/isso/perfeito/exato" como aceite — são ambíguos fora desse
+    // contexto mas inequívocos quando respondem a uma pergunta de fechamento.
+    const respostaLLM = resultado.resposta.toLowerCase();
+    const confirmacaoRegex = /\b(?:correto|confirma|pode\s*ser|certo|ok)\s*\?/;
+    const pediuConfirmacao = confirmacaoRegex.test(respostaLLM);
+    const ultimaMsgAssistantAnterior = this.historico
+      .filter((x) => x.role === "assistant")
+      .slice(-2, -1)[0] // penúltima (a atual já foi inserida em chamarLLM)
+      ?.content.toLowerCase();
+    const pediuConfirmacaoAnterior = ultimaMsgAssistantAnterior
+      ? confirmacaoRegex.test(ultimaMsgAssistantAnterior)
+      : false;
+    const aceiteCurtoRegex =
+      /^\s*(?:ok|sim|isso|perfeito|exato|exatamente|correto|claro|certo|uhum|aham)\b[\s.!?]*$/i;
+    const aceiteContextual =
+      (pediuConfirmacao || pediuConfirmacaoAnterior) &&
+      aceiteCurtoRegex.test(m);
+
+    // LLM já "declarou" a formalização? Cobre "formalizando" / "formalizado" /
+    // "foi formalizado" / "acordo formalizado" — várias conjugações que o LLM
+    // pode escolher.
+    const llmFormalizou =
+      /formaliz(?:and[oa]|ad[oa]|ei|amos|ou)|acordo\s+foi\s+formaliz|foi\s+registrad/.test(
+        respostaLLM,
+      );
+
+    if (aceiteRegex.test(m) || aceiteContextual || llmFormalizou) {
+      console.log(
+        `[ACEITE] detectado — userMsg="${m}" aceiteRegex=${aceiteRegex.test(m)} contextual=${aceiteContextual} llmFormalizou=${llmFormalizou}`,
+      );
       const planoDetectado = this.detectarPlanoAceito();
       if (planoDetectado !== undefined) {
         return await this.processarFormalizacao(planoDetectado);
