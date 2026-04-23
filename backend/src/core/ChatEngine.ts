@@ -24,6 +24,15 @@ import {
 /**
  * Motor de negociação com integração a LLM
  */
+// Endpoint + modelo do LLM são configuráveis via env. Defaults apontam para o
+// Gemma 3 no endpoint OpenAI-compatible do Google (compatível com a API_KEY
+// atual). Para usar Groq/OpenRouter/etc basta ajustar LLM_BASE_URL + LLM_MODEL
+// + LLM_API_KEY no backend/.env — nenhuma outra mudança é necessária.
+const LLM_BASE_URL =
+  process.env.LLM_BASE_URL ||
+  "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const LLM_MODEL = process.env.LLM_MODEL || "gemma-3-27b-it";
+
 export class ChatEngine {
   private calculadora: CalculadoraAcordo;
   private ofertas: OfertaCalculada[];
@@ -251,9 +260,9 @@ Regras:
 
     try {
       const response = await axios.post(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        LLM_BASE_URL,
         {
-          model: "gemma-3-27b-it",
+          model: LLM_MODEL,
           messages: mensagens,
           temperature: 0.7,
         },
@@ -591,9 +600,9 @@ Data de hoje: ${hoje}.
       }
 
       const response = await axios.post(
-        "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        LLM_BASE_URL,
         {
-          model: "gemma-3-27b-it",
+          model: LLM_MODEL,
           messages: mensagens,
           temperature: 0.7,
         },

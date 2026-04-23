@@ -38,7 +38,11 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+// API_KEY original permanece (usada pelos embeddings do Google/RAG). O LLM
+// principal usa LLM_API_KEY quando definida — útil para apontar para Groq,
+// OpenRouter, etc. sem bagunçar a chave do Google usada no RAG.
 const API_KEY = process.env.API_KEY || "";
+const LLM_API_KEY = process.env.LLM_API_KEY || API_KEY;
 
 // Inicializar RAG Service (singleton)
 // Usar sempre src/data/conhecimento (arquivos .md não são copiados pelo tsc para dist/)
@@ -112,7 +116,7 @@ app.post("/api/chat", async (req: Request, res: Response) => {
     }
 
     // Criar ChatEngine e restaurar estado da sessão
-    const engine = new ChatEngine(configuraçãoExemplo, API_KEY, ragService);
+    const engine = new ChatEngine(configuraçãoExemplo, LLM_API_KEY, ragService);
 
     if (req.session.chat_history) {
       engine.setHistorico(req.session.chat_history);
@@ -203,7 +207,7 @@ app.post("/api/limpar-sessao", (req: Request, res: Response) => {
  * Rota para obter ofertas (útil para debug)
  */
 app.get("/api/ofertas", (req: Request, res: Response) => {
-  const engine = new ChatEngine(configuraçãoExemplo, API_KEY);
+  const engine = new ChatEngine(configuraçãoExemplo, LLM_API_KEY);
 
   res.json({
     ofertas: engine.historico,
@@ -254,4 +258,7 @@ app.listen(PORT, () => {
     `🚀 [BACK-END] Servidor LucIA rodando em http://localhost:${PORT}`,
   );
   console.log(`📝 [FRONT-END] Interface LucIA em: http://localhost:5176`);
+  console.log(
+    `🤖 [LLM] model=${process.env.LLM_MODEL || "gemma-3-27b-it"} base=${process.env.LLM_BASE_URL || "Google (default)"}`,
+  );
 });
