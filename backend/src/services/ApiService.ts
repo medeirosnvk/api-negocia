@@ -168,17 +168,22 @@ export async function formalizarAcordo(
       diasentrada: dados.diasentrada,
     };
 
-    const response = await axios.post(
-      `${API_BASE_URL}/registro-master-acordo-v2`,
-      payload,
-      {
-        httpsAgent,
-        timeout: 30000,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        validateStatus: (status) => status >= 200 && status < 300,
+    const url = `${API_BASE_URL}/registro-master-acordo-v2`;
+    console.log(
+      `[FORMALIZAR] POST ${url}\n  payload: ${JSON.stringify(payload)}`,
+    );
+
+    const response = await axios.post(url, payload, {
+      httpsAgent,
+      timeout: 30000,
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
+      validateStatus: (status) => status >= 200 && status < 300,
+    });
+
+    console.log(
+      `[FORMALIZAR] ← status=${response.status} payload_enviado=${JSON.stringify(payload)} resposta=${JSON.stringify(response.data)}`,
     );
 
     const temConteudo =
@@ -202,12 +207,16 @@ export async function formalizarAcordo(
     };
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      console.error(
+        `[FORMALIZAR] ✗ erro status=${error.response?.status} resposta=${JSON.stringify(error.response?.data) || error.message}`,
+      );
       return {
         sucesso: false,
         mensagem: `Erro ao formalizar acordo: ${error.response?.status || error.message}`,
         detalhes: error.response?.data,
       };
     }
+    console.error("[FORMALIZAR] ✗ erro não-axios:", error);
     return {
       sucesso: false,
       mensagem: "Erro desconhecido ao formalizar acordo",
