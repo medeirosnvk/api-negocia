@@ -25,13 +25,14 @@ import {
  * Motor de negociação com integração a LLM
  */
 // Endpoint + modelo do LLM são configuráveis via env. Defaults apontam para o
-// Gemma 3 no endpoint OpenAI-compatible do Google (compatível com a API_KEY
-// atual). Para usar Groq/OpenRouter/etc basta ajustar LLM_BASE_URL + LLM_MODEL
-// + LLM_API_KEY no backend/.env — nenhuma outra mudança é necessária.
+// Gemini 2.0 Flash no endpoint OpenAI-compatible do Google — aceita `system`
+// role e usa a mesma API_KEY. Gemma NÃO serve como default porque não suporta
+// `Developer instruction` via esse endpoint. Para usar Groq/OpenRouter/etc
+// basta ajustar LLM_BASE_URL + LLM_MODEL + LLM_API_KEY no backend/.env.
 const LLM_BASE_URL =
   process.env.LLM_BASE_URL ||
   "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-const LLM_MODEL = process.env.LLM_MODEL || "gemma-3-27b-it";
+const LLM_MODEL = process.env.LLM_MODEL || "gemini-2.0-flash";
 
 export class ChatEngine {
   private calculadora: CalculadoraAcordo;
