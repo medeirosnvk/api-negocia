@@ -656,38 +656,81 @@ Data de hoje: ${hoje}.
     if (this.ofertasAPI.length === 0) return undefined;
     if (this.ofertasAPI.length === 1) return this.ofertasAPI[0].plano_parcela;
 
-    // Pegar as últimas mensagens do assistente para detectar o plano
-    const ultimasMensagens = this.historico
-      .filter((m) => m.role === "assistant")
-      .slice(-3)
-      .map((m) => m.content.toLowerCase());
+    const log = (origem: string, plano: number) =>
+      console.log(`[PLANO] detectado=${plano} origem="${origem}"`);
 
-    const textoRecente = ultimasMensagens.join(" ");
+    // 1) PRIORIDADE: mensagem do usuário. É ele quem escolhe — as últimas
+    //    mensagens do assistente listam TODAS as opções e a regex antiga
+    //    pegava o primeiro "2x" da lista, formalizando 2x quando o cliente
+    //    quis à vista.
+    const ultimaMsgUsuario =
+      this.historico
+        .filter((m) => m.role === "user")
+        .slice(-1)[0]
+        ?.content.toLowerCase() || "";
 
-    // Tentar encontrar referência a número de parcelas: "3x", "3 parcelas", "3 vezes"
-    const matchParcelas = textoRecente.match(
-      /(\d+)\s*(?:x\b|parcela|vezes|vez)/,
-    );
-    if (matchParcelas) {
-      const numParcelas = parseInt(matchParcelas[1], 10);
-      const ofertaCorrespondente = this.ofertasAPI.find(
-        (o) => o.plano_parcela === numParcelas,
+    // À vista (plano 1): "à vista", "a vista", "avista", "quitar tudo",
+    // "pagar tudo", "1x", "uma parcela", "uma vez".
+    const querAvista =
+      /\b[aà]\s*vista\b|\bavista\b|\bquita(?:r|ção|cao)\b|\bpagar\s*tudo\b|\b1\s*(?:x\b|parcela|vez)\b|\buma\s*(?:parcela|vez)\b/i.test(
+        ultimaMsgUsuario,
       );
-      if (ofertaCorrespondente) {
-        return ofertaCorrespondente.plano_parcela;
-      }
-    }
-
-    // Tentar detectar "à vista" => plano 1
-    if (textoRecente.includes("à vista") || textoRecente.includes("a vista")) {
+    if (querAvista) {
       const ofertaVista = this.ofertasAPI.find((o) => o.plano_parcela === 1);
       if (ofertaVista) {
+        log(`usuario "${ultimaMsgUsuario}" → à vista`, 1);
         return ofertaVista.plano_parcela;
       }
     }
 
-    // Fallback: retornar o primeiro plano
-    return this.ofertasAPI[0].plano_parcela;
+    // "Nx" / "N parcelas" / "N vezes" na mensagem do usuário
+    const matchUsuario = ultimaMsgUsuario.match(
+      /(\d+)\s*(?:x\b|parcelas?|vezes|vez)/,
+    );
+    if (matchUsuario) {
+      const n = parseInt(matchUsuario[1], 10);
+      const oferta = this.ofertasAPI.find((o) => o.plano_parcela === n);
+      if (oferta) {
+        log(`usuario "${ultimaMsgUsuario}" → ${n}x`, n);
+        return oferta.plano_parcela;
+      }
+    }
+
+    // 2) FALLBACK: última mensagem do assistente (caso ele tenha acabado de
+    //    focar em uma única opção tipo "Fechamos então em 3x?").
+    const ultimaMsgAssistant =
+      this.historico
+        .filter((m) => m.role === "assistant")
+        .slice(-1)[0]
+        ?.content.toLowerCase() || "";
+    const matchAssistant = ultimaMsgAssistant.match(
+      /(\d+)\s*(?:x\b|parcelas?|vezes|vez)/,
+    );
+    if (matchAssistant) {
+      const n = parseInt(matchAssistant[1], 10);
+      const oferta = this.ofertasAPI.find((o) => o.plano_parcela === n);
+      if (oferta) {
+        log(`assistente (última) → ${n}x`, n);
+        return oferta.plano_parcela;
+      }
+    }
+    if (
+      ultimaMsgAssistant.includes("à vista") ||
+      ultimaMsgAssistant.includes("a vista")
+    ) {
+      const ofertaVista = this.ofertasAPI.find((o) => o.plano_parcela === 1);
+      if (ofertaVista) {
+        log("assistente (última) → à vista", 1);
+        return ofertaVista.plano_parcela;
+      }
+    }
+
+    // 3) Fallback final: menor plano disponível (geralmente 1x / à vista).
+    const menor = [...this.ofertasAPI].sort(
+      (a, b) => a.plano_parcela - b.plano_parcela,
+    )[0];
+    log("fallback (menor plano disponível)", menor.plano_parcela);
+    return menor.plano_parcela;
   }
 
   /**
