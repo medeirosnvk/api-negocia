@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
-import { ThemeContext } from './contexts/ThemeContext';
-import { ChatScreen } from './screens/ChatScreen';
+import { useState, useEffect } from "react";
+import { ThemeContext } from "./contexts/ThemeContext";
+import { ChatScreen } from "./screens/ChatScreen";
 
 function App() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('light');
+  const [theme, setTheme] = useState<"dark" | "light">("light");
 
   useEffect(() => {
-    document.documentElement.classList.toggle('light', theme === 'light');
+    document.documentElement.classList.toggle("light", theme === "light");
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
   return (

@@ -1,5 +1,5 @@
 export interface Mensagem {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   text: string;
   ts: string;
 }
@@ -7,11 +7,11 @@ export interface Mensagem {
 export interface ChatResponse {
   resposta: string;
   status:
-    | 'aguardando_documento'
-    | 'selecionando_credor'
-    | 'negociando'
-    | 'encerrado'
-    | 'acordo_fechado';
+    | "aguardando_documento"
+    | "selecionando_credor"
+    | "negociando"
+    | "encerrado"
+    | "acordo_fechado";
   iddevedor?: number;
   plano?: number;
   periodicidade?: number;

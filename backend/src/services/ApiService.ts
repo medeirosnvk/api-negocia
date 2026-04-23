@@ -138,22 +138,18 @@ async function gerarToken(): Promise<string> {
     );
   }
 
-  try {
-    const response = await axios.post(
-      `${API_BASE_URL}/gerar-token`,
-      { username, password },
-      { httpsAgent, timeout: 10000 },
-    );
+  const response = await axios.post(
+    `${API_BASE_URL}/gerar-token`,
+    { username, password },
+    { httpsAgent, timeout: 10000 },
+  );
 
-    const token = response.data?.accessToken;
-    if (!token) {
-      throw new Error("Token não retornado pela API /gerar-token");
-    }
-
-    return token;
-  } catch (error) {
-    throw error;
+  const token = response.data?.accessToken;
+  if (!token) {
+    throw new Error("Token não retornado pela API /gerar-token");
   }
+
+  return token;
 }
 
 /**

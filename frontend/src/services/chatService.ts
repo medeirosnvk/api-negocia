@@ -1,9 +1,9 @@
-import type { ChatResponse, FormalizacaoResponse } from '../types';
+import type { ChatResponse, FormalizacaoResponse } from "../types";
 
 export async function enviarMensagemAPI(texto: string): Promise<ChatResponse> {
-  const response = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ mensagem: texto }),
   });
 
@@ -15,7 +15,7 @@ export async function enviarMensagemAPI(texto: string): Promise<ChatResponse> {
 }
 
 export async function limparSessaoAPI(): Promise<void> {
-  await fetch('/api/limpar-sessao', { method: 'POST' });
+  await fetch("/api/limpar-sessao", { method: "POST" });
 }
 
 export async function formalizarAcordoAPI(
@@ -24,9 +24,9 @@ export async function formalizarAcordoAPI(
   periodicidade: number,
   diasentrada: number,
 ): Promise<FormalizacaoResponse> {
-  const response = await fetch('/api/formalizar-acordo', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("/api/formalizar-acordo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ iddevedor, plano, periodicidade, diasentrada }),
   });
 

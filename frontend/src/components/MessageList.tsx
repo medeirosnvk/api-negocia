@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
-import type { Mensagem } from '../types';
-import { MessageBubble } from './MessageBubble';
-import { TypingIndicator } from './TypingIndicator';
+import { useEffect, useRef } from "react";
+import type { Mensagem } from "../types";
+import { MessageBubble } from "./MessageBubble";
+import { TypingIndicator } from "./TypingIndicator";
 
 interface MessageListProps {
   mensagens: Mensagem[];
@@ -12,7 +12,7 @@ export function MessageList({ mensagens, isTyping }: MessageListProps) {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+    endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensagens, isTyping]);
 
   return (

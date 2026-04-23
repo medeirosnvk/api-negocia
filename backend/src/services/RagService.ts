@@ -31,7 +31,9 @@ export class RagService {
 
     const key = this.apiKey || process.env.GOOGLE_API_KEY;
     if (!key) {
-      console.warn("[RAG] Nenhuma API key encontrada (API_KEY ou GOOGLE_API_KEY). RAG desativado.");
+      console.warn(
+        "[RAG] Nenhuma API key encontrada (API_KEY ou GOOGLE_API_KEY). RAG desativado.",
+      );
       this.inicializado = true;
       return;
     }
@@ -88,7 +90,8 @@ export class RagService {
    * Busca os top-K chunks mais relevantes para uma consulta
    */
   async buscar(consulta: string, topK = 3): Promise<ChunkEmbedding[]> {
-    if (!this.inicializado || this.chunks.length === 0 || !this.embeddings) return [];
+    if (!this.inicializado || this.chunks.length === 0 || !this.embeddings)
+      return [];
 
     const embeddingConsulta = await this.embeddings.embedQuery(consulta);
 

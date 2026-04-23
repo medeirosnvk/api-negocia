@@ -1,15 +1,19 @@
-import { useState } from 'react';
-import { ChatHeader } from '../components/ChatHeader';
-import { MessageList } from '../components/MessageList';
-import { ChatInput } from '../components/ChatInput';
-import { useTheme } from '../hooks/useTheme';
-import { enviarMensagemAPI, limparSessaoAPI, formalizarAcordoAPI } from '../services/chatService';
-import clsx from 'clsx';
-import type { Mensagem } from '../types';
+import { useState } from "react";
+import { ChatHeader } from "../components/ChatHeader";
+import { MessageList } from "../components/MessageList";
+import { ChatInput } from "../components/ChatInput";
+import { useTheme } from "../hooks/useTheme";
+import {
+  enviarMensagemAPI,
+  limparSessaoAPI,
+  formalizarAcordoAPI,
+} from "../services/chatService";
+import clsx from "clsx";
+import type { Mensagem } from "../types";
 
 const MENSAGEM_INICIAL: Mensagem = {
-  role: 'assistant',
-  text: 'Olá! Eu sou a LucIA, assistente virtual da Cobrance. Estou à disposição para te ajudar no que precisar. Como posso te auxiliar hoje?',
+  role: "assistant",
+  text: "Olá! Eu sou a LucIA, assistente virtual da Cobrance. Estou à disposição para te ajudar no que precisar. Como posso te auxiliar hoje?",
   ts: new Date().toISOString(),
 };
 
@@ -17,9 +21,9 @@ export function ChatScreen() {
   const [mensagens, setMensagens] = useState<Mensagem[]>([MENSAGEM_INICIAL]);
   const [isTyping, setIsTyping] = useState(false);
   const [inputDisabled, setInputDisabled] = useState(false);
-  const [placeholder, setPlaceholder] = useState('Digite sua mensagem...');
+  const [placeholder, setPlaceholder] = useState("Digite sua mensagem...");
 
-  const adicionarMensagem = (text: string, role: 'user' | 'assistant') => {
+  const adicionarMensagem = (text: string, role: "user" | "assistant") => {
     const novaMensagem: Mensagem = {
       role,
       text,
@@ -28,7 +32,9 @@ export function ChatScreen() {
     setMensagens((prev) => [...prev, novaMensagem]);
   };
 
-  const formatarRetornoFormalizacao = (detalhes: Record<string, unknown>): string => {
+  const formatarRetornoFormalizacao = (
+    detalhes: Record<string, unknown>,
+  ): string => {
     const primeiraEtapa = detalhes.primeiraEtapaResponse as {
       iddevedor?: number;
       plano?: number;
@@ -49,10 +55,10 @@ export function ChatScreen() {
       pixCopiaECola?: string;
     };
 
-    let mensagem = '✅ **Acordo formalizado com sucesso!**\n\n';
+    let mensagem = "✅ **Acordo formalizado com sucesso!**\n\n";
 
     if (primeiraEtapa) {
-      mensagem += '📋 **Detalhes do Acordo:**\n';
+      mensagem += "📋 **Detalhes do Acordo:**\n";
       if (primeiraEtapa.iddevedor) {
         mensagem += `• ID Devedor: ${primeiraEtapa.iddevedor}\n`;
       }
@@ -63,27 +69,39 @@ export function ChatScreen() {
         mensagem += `• ID Credor: ${primeiraEtapa.idcredor}\n`;
       }
       if (primeiraEtapa.total_geral) {
-        mensagem += `• Total Geral: R$ ${parseFloat(primeiraEtapa.total_geral.toString()).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
+        mensagem += `• Total Geral: R$ ${parseFloat(primeiraEtapa.total_geral.toString()).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
       }
       if (primeiraEtapa.valor_parcela) {
-        mensagem += `• Valor da Parcela: R$ ${parseFloat(primeiraEtapa.valor_parcela).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
+        mensagem += `• Valor da Parcela: R$ ${parseFloat(primeiraEtapa.valor_parcela).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
       }
       if (primeiraEtapa.ultimaDataVencimento) {
-        const dataFormatada = new Date(primeiraEtapa.ultimaDataVencimento).toLocaleDateString('pt-BR');
+        const dataFormatada = new Date(
+          primeiraEtapa.ultimaDataVencimento,
+        ).toLocaleDateString("pt-BR");
         mensagem += `• Última Data de Vencimento: ${dataFormatada}\n`;
       }
-      if (primeiraEtapa.vencimentosParcelas && primeiraEtapa.vencimentosParcelas.length > 0) {
-        mensagem += '\n📅 **Vencimentos das Parcelas:**\n';
+      if (
+        primeiraEtapa.vencimentosParcelas &&
+        primeiraEtapa.vencimentosParcelas.length > 0
+      ) {
+        mensagem += "\n📅 **Vencimentos das Parcelas:**\n";
         primeiraEtapa.vencimentosParcelas.forEach((parcela, index) => {
-          const dataFormatada = new Date(parcela.vencimento).toLocaleDateString('pt-BR');
-          const valorFormatado = parseFloat(parcela.valorParcelaAtual).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          const dataFormatada = new Date(parcela.vencimento).toLocaleDateString(
+            "pt-BR",
+          );
+          const valorFormatado = parseFloat(
+            parcela.valorParcelaAtual,
+          ).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
           mensagem += `  ${index + 1}. ${dataFormatada} - R$ ${valorFormatado}\n`;
         });
       }
     }
 
     if (terceiraEtapa) {
-      mensagem += '\n💳 **Informações de Pagamento:**\n';
+      mensagem += "\n💳 **Informações de Pagamento:**\n";
       if (terceiraEtapa.urlBoleto) {
         mensagem += `• Boleto: ${terceiraEtapa.urlBoleto}\n`;
       }
@@ -95,7 +113,8 @@ export function ChatScreen() {
       }
     }
 
-    mensagem += '\n⚠️ **Importante:** Guarde estas informações para realizar o pagamento.';
+    mensagem +=
+      "\n⚠️ **Importante:** Guarde estas informações para realizar o pagamento.";
 
     return mensagem;
   };
@@ -105,67 +124,83 @@ export function ChatScreen() {
     plano: number,
     periodicidade: number,
     diasentrada: number,
-    onSucesso: () => void
+    onSucesso: () => void,
   ) => {
     try {
-      const data = await formalizarAcordoAPI(iddevedor, plano, periodicidade, diasentrada);
+      const data = await formalizarAcordoAPI(
+        iddevedor,
+        plano,
+        periodicidade,
+        diasentrada,
+      );
 
       if (data.sucesso && data.detalhes) {
         const mensagemFormatada = formatarRetornoFormalizacao(data.detalhes);
-        adicionarMensagem(mensagemFormatada, 'assistant');
+        adicionarMensagem(mensagemFormatada, "assistant");
         onSucesso();
       } else {
         setIsTyping(false);
         adicionarMensagem(
           data.mensagem ||
-            'Houve um problema ao formalizar o acordo. Por favor, tente novamente ou entre em contato conosco.',
-          'assistant'
+            "Houve um problema ao formalizar o acordo. Por favor, tente novamente ou entre em contato conosco.",
+          "assistant",
         );
       }
     } catch (error) {
-      console.error('Erro ao formalizar:', error);
+      console.error("Erro ao formalizar:", error);
       setIsTyping(false);
       adicionarMensagem(
-        'A formalização do acordo não foi concluída. Por favor, tente novamente ou entre em contato conosco.',
-        'assistant'
+        "A formalização do acordo não foi concluída. Por favor, tente novamente ou entre em contato conosco.",
+        "assistant",
       );
     }
   };
 
   const enviarMensagem = async (texto: string) => {
-    adicionarMensagem(texto, 'user');
+    adicionarMensagem(texto, "user");
     setIsTyping(true);
 
     try {
       const data = await enviarMensagemAPI(texto);
       setIsTyping(false);
-      adicionarMensagem(data.resposta, 'assistant');
+      adicionarMensagem(data.resposta, "assistant");
 
-      if (data.status === 'acordo_fechado') {
-        if (data.iddevedor != null && data.plano != null && data.periodicidade != null && data.diasentrada != null) {
+      if (data.status === "acordo_fechado") {
+        if (
+          data.iddevedor != null &&
+          data.plano != null &&
+          data.periodicidade != null &&
+          data.diasentrada != null
+        ) {
           setIsTyping(true);
-          formalizarAcordo(data.iddevedor, data.plano, data.periodicidade, data.diasentrada, () => {
-            setIsTyping(false);
-          });
+          formalizarAcordo(
+            data.iddevedor,
+            data.plano,
+            data.periodicidade,
+            data.diasentrada,
+            () => {
+              setIsTyping(false);
+            },
+          );
         } else {
           adicionarMensagem(
-            'Não foi possível formalizar o acordo (dados insuficientes). Por favor, tente novamente.',
-            'assistant'
+            "Não foi possível formalizar o acordo (dados insuficientes). Por favor, tente novamente.",
+            "assistant",
           );
         }
       }
     } catch (error) {
       setIsTyping(false);
       adicionarMensagem(
-        'Ops, tive um probleminha na conexão. Pode repetir?',
-        'assistant'
+        "Ops, tive um probleminha na conexão. Pode repetir?",
+        "assistant",
       );
-      console.error('Erro:', error);
+      console.error("Erro:", error);
     }
   };
 
   const limparConversa = async () => {
-    if (!confirm('Deseja realmente limpar a conversa e começar do zero?')) {
+    if (!confirm("Deseja realmente limpar a conversa e começar do zero?")) {
       return;
     }
 
@@ -173,49 +208,49 @@ export function ChatScreen() {
       await limparSessaoAPI();
       setMensagens([MENSAGEM_INICIAL]);
       setInputDisabled(false);
-      setPlaceholder('Digite sua mensagem...');
+      setPlaceholder("Digite sua mensagem...");
       setIsTyping(false);
     } catch (error) {
-      alert('Erro ao limpar sessão');
-      console.error('Erro:', error);
+      alert("Erro ao limpar sessão");
+      console.error("Erro:", error);
     }
   };
 
   const gerarRelatorio = () => {
-    const novaJanela = window.open('', '_blank');
+    const novaJanela = window.open("", "_blank");
     if (!novaJanela) {
       alert(
-        'Seu navegador bloqueou a nova aba. Permita pop-ups para gerar o relatório.'
+        "Seu navegador bloqueou a nova aba. Permita pop-ups para gerar o relatório.",
       );
       return;
     }
 
     const escapeHtml = (str: string) => {
       return String(str)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     };
 
     const linhas = mensagens
       .map((m) => {
-        const quando = new Date(m.ts).toLocaleString('pt-BR');
-        const quem = m.role === 'user' ? 'Você' : 'LucIA';
+        const quando = new Date(m.ts).toLocaleString("pt-BR");
+        const quem = m.role === "user" ? "Você" : "LucIA";
         return `
           <div class="msg ${m.role}">
             <div class="meta">
               <span class="who">${escapeHtml(quem)}</span>
               <span class="when">${escapeHtml(quando)}</span>
             </div>
-            <div class="text">${escapeHtml(m.text).replaceAll('\n', '<br>')}</div>
+            <div class="text">${escapeHtml(m.text).replaceAll("\n", "<br>")}</div>
           </div>
         `;
       })
-      .join('\n');
+      .join("\n");
 
-    const geradoEm = new Date().toLocaleString('pt-BR');
+    const geradoEm = new Date().toLocaleString("pt-BR");
 
     const html = `
       <!doctype html>
@@ -261,7 +296,14 @@ export function ChatScreen() {
   };
 
   return (
-    <div className={clsx("flex flex-col w-full max-w-[600px] h-[calc(100vh-4rem)] max-h-[900px] glass-panel border rounded-2xl overflow-hidden shadow-2xl relative", useTheme().theme === 'light' ? "border-gray-200 shadow-black/10" : "border-lucia-border shadow-black/40")}>
+    <div
+      className={clsx(
+        "flex flex-col w-full max-w-[600px] h-[calc(100vh-4rem)] max-h-[900px] glass-panel border rounded-2xl overflow-hidden shadow-2xl relative",
+        useTheme().theme === "light"
+          ? "border-gray-200 shadow-black/10"
+          : "border-lucia-border shadow-black/40",
+      )}
+    >
       {/* Subtle top accent line */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-lucia-accent/30 to-transparent" />
 

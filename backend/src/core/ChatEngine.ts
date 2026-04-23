@@ -30,8 +30,6 @@ export class ChatEngine {
   public historico: MensagemChat[] = [];
   private apiKey: string;
   private cadencia: "mensal" | "diario" | "semanal" | "quinzenal" = "mensal";
-  private dataEntradaNegociada: string | null = null;
-  private postergaLiberada: boolean = false;
   private ragService: RagService | null = null;
 
   // Campos para fluxo de apresentação
@@ -53,7 +51,11 @@ export class ChatEngine {
     diasentrada: 0,
   };
 
-  constructor(config: ConfiguracaoAcordo, apiKey: string, ragService?: RagService) {
+  constructor(
+    config: ConfiguracaoAcordo,
+    apiKey: string,
+    ragService?: RagService,
+  ) {
     this.calculadora = new CalculadoraAcordo(config);
     this.ofertas = [];
     this.apiKey = apiKey;
@@ -141,217 +143,6 @@ export class ChatEngine {
   }
 
   /**
-   * Inicializa a conversa se o histórico estiver vazio
-   */
-  private inicializarConversa(msg: string): void {
-    // Atualiza ofertas com cadência atual
-    this.ofertas = this.calculadora.gerarOfertas(this.cadencia);
-
-    const hoje = this.formatarData(new Date());
-    const dataSugerida = this.calculadora.getDataEntrada();
-    const dataLimite = this.calculadora.getDataEntradaMaxima();
-    const m = msg.toLowerCase();
-
-    let recalculoNecessario = false;
-
-    // Textos das ofertas
-    const textoOfertas = this.ofertas
-      .map(
-        (o) =>
-          `- ${o.parcelas}x de R$ ${o.valor_parcela} (Venc. Final: ${o.vencimento_final})`,
-      )
-      .join("\n");
-
-    let notaSistema = "";
-    if (this.postergaLiberada) {
-      notaSistema = `### ATENÇÃO: O devedor solicitou ou você liberou a postergação. 
-As ofertas abaixo JÁ ESTÃO CALCULADAS com a primeira parcela para o dia ${dataSugerida}. 
-Confirme com o devedor que você conseguiu ajustar para esta data e apresente os novos valores abaixo.`;
-    }
-
-    // Detectar pedido de data ou resistência
-    const matchData = msg.match(/(\d{2})\/(\d{2})/);
-    if (matchData) {
-      const ano = new Date().getFullYear();
-      this.dataEntradaNegociada = `${ano}-${matchData[2]}-${matchData[1]}`;
-      this.postergaLiberada = true;
-      recalculoNecessario = true;
-    } else if (
-      m.includes("não consigo") ||
-      m.includes("adiar") ||
-      m.includes("prazo")
-    ) {
-      this.dataEntradaNegociada = dataLimite.replace(
-        /(\d{2})\/(\d{2})\/(\d{4})/,
-        "$3-$2-$1",
-      );
-      this.postergaLiberada = true;
-      recalculoNecessario = true;
-    }
-
-    if (recalculoNecessario) {
-      this.recalcularOfertas();
-    }
-
-    const prompt = `Você é a LucIA, uma assistente virtual de negociação. Seu objetivo é ajudar a pessoa a regularizar uma pendência de forma acolhedora, respeitosa e prática, considerando que ela pode estar passando por um momento difícil (ninguém fica em atraso porque quer).
-${notaSistema}
-## Como você funciona (importante)
-- Você trabalha em conjunto com um motor de cálculo (CalculadoraAcordo) que calcula valores, datas e condições.
-- As ofertas exibidas para você são calculadas e respeitam as regras do negócio, principalmente o limite de vencimento_maximo.
-- Quando a pessoa pedir uma periodicidade diferente (semanal/quinzenal/diária) ou quando ela informar um valor aproximado que consegue pagar, você deve fazer o esforço de adequar a proposta usando as condições calculadas pelo sistema.
-
-## Tom e postura
-- Empática, humana e sem julgamentos.
-- Objetiva e clara: explique valores e condições de forma simples.
-- Evite a palavra "dívida". Use "pendência", "valor em aberto", "regularização".
-
-## Formatação das mensagens
-- NUNCA use asteriscos (*) de forma excessiva ou para criar listas.
-- Use **negrito** (dois asteriscos) APENAS para destacar valores monetários (ex: **R$ 150,00**) e datas (ex: **15/02/2026**).
-- Escreva de forma fluida, em parágrafos curtos, sem bullets ou listas extensas.
-- Mantenha as respostas concisas e conversacionais, como uma conversa real de WhatsApp.
-
-## REGRA DE OURO PARA O INÍCIO:
-- Olhe para a oferta de "1x" na lista abaixo.
-- Use a data de vencimento que aparece EXATAMENTE na oferta de 1x para oferecer a opção à vista.
-- Se o cliente disser que não pode pagar nessa data, informe que você pode postergar a entrada para as opções parceladas até o dia ${dataLimite}.
-
-## Estratégia de negociação (não despejar tudo)
-1) Comece sempre oferecendo a opção à vista.
-2) Se necessário, ofereça mais 1 ou 2 opções curtas (ex.: 2x e 3x).
-3) Só amplie para mais parcelas quando a pessoa pedir ou indicar que não consegue pagar nessas condições.
-4) Sempre comece oferecendo para a DATA SUGERIDA.
-5) Só ofereça a DATA LIMITE se o cliente reclamar.
-
-## Entendimento de periodicidade (o que a pessoa quer)
-- "por semana", "semanal" => semanal
-- "quinzena", "quinzenal", "a cada 15 dias" => quinzenal (15 dias)
-- "todo dia", "diário", "por dia" => diário
-- "por mês", "mensal" => mensal
-
-Quando a pessoa pedir uma periodicidade, confirme com naturalidade e apresente condições compatíveis (sem ultrapassar vencimento_maximo).
-
-## QUANDO A PESSOA DIZ UM VALOR APROXIMADO (regra principal):
-Se a pessoa informar um teto de orçamento, por exemplo:
-- "Consigo pagar 150 por semana"
-- "Dá pra ficar perto de 200 por mês?"
-- "Algo em torno de 50 por dia"
-
-Você deve seguir esta lógica:
-1) Acolha e valide o esforço da pessoa com carisma.
-   Ex.: "Que bom que você me disse isso! Vamos ajustar para caber no seu bolso."
-2) Confirme a periodicidade se estiver ambígua (semanal/quinzenal/diária/mensal).
-3) Escolha a proposta assim:
-   - Procure nas ofertas disponíveis da periodicidade solicitada a PRIMEIRA opção cuja parcela seja MENOR OU IGUAL ao valor informado pelo cliente.
-   - Priorize a menor quantidade de parcelas possível dentre as que cabem no orçamento.
-   - Exemplo: se a pessoa diz "150 por semana" e existir 7x de 139,86 semanal, você DEVE oferecer essa opção (mesmo que exista outra de 5x de 189,50).
-4) Se NÃO existir nenhuma parcela <= valor informado:
-   - Informe com cuidado que, dentro do prazo permitido, a menor parcela disponível fica em R$ X.
-   - Pergunte se esse valor ainda funciona.
-
-COMO APRESENTAR A PROPOSTA ENCONTRADA:
-- Use carisma e positividade, por exemplo:
-  "Achei uma proposta que cabe no seu bolso, que legal!"
-  "Boa notícia: encontrei uma opção bem dentro do que você comentou!"
-- Depois informe de forma objetiva:
-  - número de parcelas
-  - periodicidade por extenso
-  - valor da parcela
-  - data do último vencimento
-Exemplo:
-"Achei uma proposta que cabe no seu bolso, que legal! Ficaria em 7 parcelas semanais de R$ 139,86, com último vencimento em 16/02/2026. Posso seguir com essa opção?"
-
-## Regra de Entrada e Postergação:
-- A data da primeira parcela (entrada) não é necessariamente hoje. Ela já vem calculada pelo sistema respeitando o prazo de carência permitido.
-- Se o devedor disser que não pode pagar hoje ou que precisa de uns dias, explique que a proposta já contempla um prazo para o primeiro pagamento.
-- Informe sempre a data da primeira parcela (se disponível) ou apenas confirme que o primeiro vencimento ficou para a data calculada na oferta.
-- Nunca prometa uma data de entrada que não esteja prevista nos cálculos enviados pelo sistema.
-
-## Regra de Datas (Importante):
-- A data de hoje é: ${hoje}.
-- A data da primeira parcela (entrada) já está calculada para: ${dataSugerida}.
-- A data máxima permitida para a entrada é: ${dataLimite}.
-- Se a data da entrada for igual à data de hoje (${hoje}), você deve dizer: "com vencimento hoje" ou "a primeira parcela é para hoje".
-- Se a data da entrada for diferente de hoje, você deve informar: "a primeira parcela fica para o dia ${dataSugerida}".
-- Se o devedor pedir para postergar a entrada além de ${dataLimite}, explique que o prazo máximo permitido para começar é ${dataLimite}.
-
-## Regra de Entrada e Flexibilidade:
-- A data máxima permitida para a entrada é: ${dataLimite}.
-- Se o devedor sugerir uma data de entrada que seja IGUAL ou ANTERIOR a ${dataLimite}, aceite com entusiasmo!
-- Exemplo: "Que ótima notícia! Consigo sim ajustar a entrada para o dia solicitado. Com essa nova data, as condições ficaram assim: [Apresentar novas ofertas]".
-- Se ele pedir uma data APÓS ${dataLimite}, explique que o limite do sistema para este acordo é ${dataLimite}.
-
-## Regra de Entrada e Postergação:
-- A data de hoje é: ${hoje}.
-- A primeira parcela (entrada) já está calculada para: ${dataSugerida}.
-- A data máxima permitida para postergar a entrada é: ${dataLimite}.
-- Se ${dataSugerida} for igual a ${hoje}, diga: "a primeira parcela é para hoje" ou "com vencimento hoje".
-- Se ${dataSugerida} for diferente de ${hoje}, diga: "a primeira parcela fica para o dia ${dataSugerida}".
-- Se o devedor pedir para adiar a entrada além de ${dataLimite}, explique com empatia: "Entendo sua situação, mas o prazo máximo que consigo liberar para a entrada é até o dia ${dataLimite}. Conseguimos assim?"
-- Nunca prometa uma data de entrada que ultrapasse ${dataLimite}.
-
-## Regras de apresentação de proposta
-Sempre que você apresentar uma condição, informe:
-- número de parcelas
-- periodicidade por extenso (mensal/semanal/quinzenal/diária)
-- valor da parcela
-- data do último vencimento (quando disponível)
-Se a última parcela tiver valor diferente por ajuste de centavos, explique de forma simples.
-
-## Limites e honestidade
-- Se a pessoa pedir algo que não existe dentro do prazo (vencimento_maximo), explique com cuidado:
-"Eu queria muito te ajudar nessa condição, mas preciso respeitar um prazo limite para regularização. Dentro desse prazo, a melhor opção que consigo te oferecer é: ..."
-
-## Perguntas de apoio (quando necessário)
-- "Qual valor por [semana/quinzena/mês/dia] cabe no seu orçamento?"
-- "Você prefere começar o pagamento quando? (A entrada respeita o prazo mínimo configurado.)"
-- "Você prefere [periodicidade] ou [periodicidade]?"
-
-## Fechamento
-Se a pessoa aceitar claramente (ex.: "aceito", "fechado", "ok pode ser", "vamos fazer"), responda EXATAMENTE:
-"Obrigado! Estou formalizando seu acordo."
-Depois faça 1 pergunta objetiva para confirmar o combinado (ex.: periodicidade e número de parcelas).
-
-## Ofertas Disponíveis (base de cálculo atual: ${this.cadencia})
-${textoOfertas}
-
-Agora inicie a conversa de forma acolhedora, apresentando-se como LucIA e oferecendo a primeira opção à vista. Depois, pergunte qual formato (à vista ou parcelado) a pessoa prefere e se ela tem uma faixa de valor que cabe no orçamento.`;
-
-    this.historico.push({
-      role: "system",
-      content: prompt,
-    });
-  }
-
-  /**
-   * Extrai a cadência da mensagem do usuário
-   */
-  private extrairCadencia(
-    msg: string,
-  ): "mensal" | "diario" | "semanal" | "quinzenal" | null {
-    const m = msg.toLowerCase();
-    if (m.includes("diário") || m.includes("diario")) return "diario";
-    if (m.includes("quinzenal") || m.includes("quinzena")) return "quinzenal";
-    if (m.includes("semanal") || m.includes("semana")) return "semanal";
-    if (m.includes("mensal") || m.includes("mês") || m.includes("mes"))
-      return "mensal";
-    return null;
-  }
-
-  /**
-   * Recalcula ofertas com base em data negociada
-   */
-  private recalcularOfertas(): void {
-    const dataParaCalculo = this.postergaLiberada
-      ? this.dataEntradaNegociada
-      : null;
-    this.ofertas = this.calculadora.gerarOfertas(
-      this.cadencia,
-      dataParaCalculo,
-    );
-  }
-
-  /**
    * Formata data no padrão dd/mm/yyyy
    */
   private formatarData(data: Date): string {
@@ -359,6 +150,22 @@ Agora inicie a conversa de forma acolhedora, apresentando-se como LucIA e oferec
     const mes = String(data.getMonth() + 1).padStart(2, "0");
     const ano = data.getFullYear();
     return `${dia}/${mes}/${ano}`;
+  }
+
+  /**
+   * Formata data incluindo dia da semana (ex: "quinta-feira, 23/04/2026")
+   */
+  private formatarDataCompleta(data: Date): string {
+    const diasSemana = [
+      "domingo",
+      "segunda-feira",
+      "terça-feira",
+      "quarta-feira",
+      "quinta-feira",
+      "sexta-feira",
+      "sábado",
+    ];
+    return `${diasSemana[data.getDay()]}, ${this.formatarData(data)}`;
   }
 
   /**
@@ -370,24 +177,14 @@ Agora inicie a conversa de forma acolhedora, apresentando-se como LucIA e oferec
   }
 
   /**
-   * Gera mensagem de apresentação acolhedora (sem mencionar dívida/negociação)
-   */
-  private gerarMensagemBoasVindas(): string {
-    return "Olá! Eu sou a LucIA, assistente virtual da Cobrance. Estou à disposição para te ajudar no que precisar. Como posso te auxiliar hoje?";
-  }
-
-  /**
-   * Processa a resposta do usuário no estado de apresentação.
-   * Usa LLM para gerar uma resposta natural que conduz ao pedido de CPF/CNPJ.
-   */
-  /**
    * Conversa natural com o usuário antes de pedir documento.
    * Se detectar CPF/CNPJ na mensagem, já processa como documento.
    * Se o usuário indicar que precisa de ajuda, guia para o documento.
    */
   private async processarConversa(msg: string): Promise<ResultadoChat> {
     // Se o usuário já enviou um CPF/CNPJ, processar direto
-    const docRegex = /\d{11,14}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2}|\d{2}\.?\d{3}\.?\d{3}\/?\d{4}[-.]?\d{2}/;
+    const docRegex =
+      /\d{11,14}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2}|\d{2}\.?\d{3}\.?\d{3}\/?\d{4}[-.]?\d{2}/;
     if (docRegex.test(msg.replace(/\s/g, ""))) {
       this.estado = "aguardando_documento";
       return await this.processarDocumento(msg);
@@ -397,7 +194,10 @@ Agora inicie a conversa de forma acolhedora, apresentando-se como LucIA e oferec
 
     // Detectar se o usuário indicou o que precisa (negociar, pagar, ver pendências, etc.)
     const m = msg.toLowerCase();
-    const querAjuda = /negoci|pagar|parcela|boleto|acordo|d[ií]vida|pend[eê]ncia|atras|conta|d[eé]bito|regulariz|segunda.?via|quitar/.test(m);
+    const querAjuda =
+      /negoci|pagar|parcela|boleto|acordo|d[ií]vida|pend[eê]ncia|atras|conta|d[eé]bito|regulariz|segunda.?via|quitar/.test(
+        m,
+      );
 
     const promptConversa = querAjuda
       ? `Você é a LucIA, assistente virtual da Cobrance. O usuário indicou que precisa de ajuda com algo específico.
@@ -429,7 +229,10 @@ Regras:
     }
 
     const mensagens: MensagemChat[] = [
-      { role: "system", content: promptConversa + (contextoRag ? `\n\n${contextoRag}` : "") },
+      {
+        role: "system",
+        content: promptConversa + (contextoRag ? `\n\n${contextoRag}` : ""),
+      },
       ...this.historico,
     ];
 
@@ -552,20 +355,22 @@ Regras:
     const iddevedor = this.credorSelecionado.iddevedor;
 
     const [ofertasMensais, ofertasSemanais, dividasResult] = await Promise.all([
-      buscarOfertasCredor(iddevedor, 10, 30, 0),   // mensal
-      buscarOfertasCredor(iddevedor, 10, 7, 0),    // semanal
+      buscarOfertasCredor(iddevedor, 10, 30, 0), // mensal
+      buscarOfertasCredor(iddevedor, 10, 7, 0), // semanal
       buscarDividasCredor(iddevedor, database),
     ]);
 
     // Cachear ofertas mensais (padrão)
     this.ofertasAPI = ofertasMensais;
     this.ofertasAPIMensais = ofertasMensais;
-    this.ofertasMensais = ofertasMensais.length > 0 ? this.mapearOfertasAPI(ofertasMensais) : [];
+    this.ofertasMensais =
+      ofertasMensais.length > 0 ? this.mapearOfertasAPI(ofertasMensais) : [];
     this.dividasDetalhe = dividasResult;
 
     // Cachear ofertas semanais
     this.ofertasAPISemanais = ofertasSemanais;
-    this.ofertasSemanais = ofertasSemanais.length > 0 ? this.mapearOfertasAPI(ofertasSemanais) : [];
+    this.ofertasSemanais =
+      ofertasSemanais.length > 0 ? this.mapearOfertasAPI(ofertasSemanais) : [];
 
     if (this.ofertasAPI.length === 0) {
       const resposta =
@@ -625,7 +430,7 @@ Regras:
    * Cria prompt de negociação com ofertas
    */
   private criarPromptNegociacao(): void {
-    const hoje = this.formatarData(new Date());
+    const hoje = this.formatarDataCompleta(new Date());
     const credor = this.credorSelecionado!;
 
     const textoOfertas = this.ofertas
@@ -702,7 +507,8 @@ Se a pessoa aceitar claramente (ex.: "aceito", "fechado", "ok pode ser"), respon
 "Obrigado! Estou formalizando seu acordo."
 O sistema irá processar a formalização automaticamente.
 
-Data de hoje: ${hoje}`;
+Data de hoje: ${hoje}.
+IMPORTANTE: Sempre que precisar se referir ao dia atual ou dia da semana, use EXATAMENTE o valor acima. NUNCA invente ou calcule o dia da semana por conta própria.`;
 
     this.historico.push({
       role: "system",
@@ -723,9 +529,27 @@ Data de hoje: ${hoje}`;
           ]
         : [...this.historico];
 
+      // Reinjetar data/dia-da-semana atual a cada chamada (o prompt salvo no
+      // histórico tem a data do momento em que a negociação iniciou e pode
+      // ficar defasado caso o atendimento atravesse a meia-noite).
+      if (this.estado === "negociando" && mensagens.length > 0) {
+        const hojeAtual = this.formatarDataCompleta(new Date());
+        mensagens = [
+          mensagens[0],
+          {
+            role: "system" as const,
+            content: `Data atual do sistema: ${hojeAtual}. Use EXATAMENTE este valor ao se referir a hoje ou ao dia da semana — sobrescreve qualquer data anterior no histórico.`,
+          },
+          ...mensagens.slice(1),
+        ];
+      }
+
       // Injetar contexto RAG no estado de negociação
       if (this.estado === "negociando" && this.ragService?.estaInicializado()) {
-        const consulta = mensagemInterna || this.historico.filter(m => m.role === "user").pop()?.content || "";
+        const consulta =
+          mensagemInterna ||
+          this.historico.filter((m) => m.role === "user").pop()?.content ||
+          "";
         if (consulta) {
           const resultados = await this.ragService.buscar(consulta, 3);
           if (resultados.length > 0) {
@@ -901,34 +725,42 @@ Data de hoje: ${hoje}`;
       }
     }
 
-    // Detectar periodicidade — variações naturais
-    // Diário: "diário", "diaria", "todo dia", "por dia", "diariamente", "a cada dia", "1 em 1 dia", "de 1 em 1"
+    // Detectar periodicidade — variações naturais (inclui formas plurais)
+    // Diário: "diário(s)", "diária(s)", "todo dia", "por dia", "diariamente", "a cada dia", "de 1 em 1 dia"
     if (
-      /\bdi[aá]ri[oa]\b|\btodo\s*dia\b|\bpor\s*dia\b|\bdiariamente\b|\ba\s*cada\s*dia\b|\b(?:de\s*)?1\s*em\s*1\s*dia/.test(m)
+      /\bdi[aá]ri[oa]s?\b|\btodo\s*dia\b|\bpor\s*dia\b|\bdiariamente\b|\ba\s*cada\s*dia\b|\b(?:de\s*)?1\s*em\s*1\s*dia/.test(
+        m,
+      )
     ) {
       mudancas.periodicidade = 1;
       temMudanca = true;
     }
-    // Semanal: "semanal", "por semana", "toda semana", "semanalmente", "a cada semana",
-    // "1 vez por semana", "uma vez por semana", "de 7 em 7", "a cada 7 dias", "de semana em semana"
+    // Semanal(is): "semanal", "semanais", "por semana", "toda semana", "semanalmente",
+    // "a cada semana", "1 vez por semana", "de 7 em 7", "a cada 7 dias", "de semana em semana"
     else if (
-      /\bsemanal\b|\bsemanalmente\b|\bpor\s*semana\b|\btoda\s*semana\b|\ba\s*cada\s*semana\b|\b(?:de\s*)?7\s*em\s*7\b|\ba\s*cada\s*7\s*dias\b|\b(?:uma|1)\s*vez\s*(?:por|na|a\s*cada)\s*semana\b|\bde\s*semana\s*em\s*semana\b/.test(m)
+      /\bsemana(?:l|is)\b|\bsemanalmente\b|\bpor\s*semana\b|\btoda\s*semana\b|\ba\s*cada\s*semana\b|\b(?:de\s*)?7\s*em\s*7\b|\ba\s*cada\s*7\s*dias\b|\b(?:uma|1)\s*vez\s*(?:por|na|a\s*cada)\s*semana\b|\bde\s*semana\s*em\s*semana\b/.test(
+        m,
+      )
     ) {
       mudancas.periodicidade = 7;
       temMudanca = true;
     }
-    // Quinzenal: "quinzenal", "quinzena", "a cada 15 dias", "quinzenalmente", "de 15 em 15",
-    // "2 vezes por mês", "duas vezes por mês", "2 vezes no mês", "a cada quinzena", "de quinzena em quinzena"
+    // Quinzenal(is): "quinzenal", "quinzenais", "quinzena", "quinzenalmente",
+    // "a cada 15 dias", "de 15 em 15", "2 vezes por mês", "a cada quinzena"
     else if (
-      /\bquinzenal\b|\bquinzenalmente\b|\bquinzena\b|\ba\s*cada\s*15\s*dias\b|\b(?:de\s*)?15\s*em\s*15\b|\b(?:duas|2)\s*vezes\s*(?:por|no|ao)\s*m[eê]s\b|\ba\s*cada\s*quinzena\b|\bde\s*quinzena\s*em\s*quinzena\b/.test(m)
+      /\bquinzena(?:l|is)?\b|\bquinzenalmente\b|\ba\s*cada\s*15\s*dias\b|\b(?:de\s*)?15\s*em\s*15\b|\b(?:duas|2)\s*vezes\s*(?:por|no|ao)\s*m[eê]s\b|\ba\s*cada\s*quinzena\b|\bde\s*quinzena\s*em\s*quinzena\b/.test(
+        m,
+      )
     ) {
       mudancas.periodicidade = 15;
       temMudanca = true;
     }
-    // Mensal: "mensal", "por mês", "todo mês", "mensalmente", "a cada mês",
-    // "1 vez por mês", "uma vez por mês", "de 30 em 30", "a cada 30 dias", "de mês em mês"
+    // Mensal(is): "mensal", "mensais", "por mês", "todo mês", "mensalmente",
+    // "a cada mês", "1 vez por mês", "de 30 em 30", "a cada 30 dias", "de mês em mês"
     else if (
-      /\bmensal\b|\bmensalmente\b|\bpor\s*m[eê]s\b|\btodo\s*m[eê]s\b|\ba\s*cada\s*m[eê]s\b|\b(?:de\s*)?30\s*em\s*30\b|\ba\s*cada\s*30\s*dias\b|\b(?:uma|1)\s*vez\s*(?:por|no|ao|a\s*cada)\s*m[eê]s\b|\bde\s*m[eê]s\s*em\s*m[eê]s\b/.test(m)
+      /\bmensa(?:l|is)\b|\bmensalmente\b|\bpor\s*m[eê]s\b|\btodo\s*m[eê]s\b|\ba\s*cada\s*m[eê]s\b|\b(?:de\s*)?30\s*em\s*30\b|\ba\s*cada\s*30\s*dias\b|\b(?:uma|1)\s*vez\s*(?:por|no|ao|a\s*cada)\s*m[eê]s\b|\bde\s*m[eê]s\s*em\s*m[eê]s\b/.test(
+        m,
+      )
     ) {
       mudancas.periodicidade = 30;
       temMudanca = true;
@@ -937,7 +769,7 @@ Data de hoje: ${hoje}`;
     // Detectar mudança de data da primeira parcela / entrada
     // 1. Data explícita dd/mm: "dia 15/03", "primeira parcela 20/02", "pagar no dia 10/03"
     const matchDataExplicita = m.match(
-      /(?:dia|data|primeira?\s*(?:parcela)?|pagar|pag(?:amento)?|come[cç]ar|iniciar|vencimento)\s*(?:no|em|para|pro|pra|de)?\s*(?:o?\s*dia)?\s*(\d{1,2})\s*[\/\-]\s*(\d{1,2})(?:\s*[\/\-]\s*(\d{2,4}))?/,
+      /(?:dia|data|primeira?\s*(?:parcela)?|pagar|pag(?:amento)?|come[cç]ar|iniciar|vencimento)\s*(?:no|em|para|pro|pra|de)?\s*(?:o?\s*dia)?\s*(\d{1,2})\s*[/-]\s*(\d{1,2})(?:\s*[/-]\s*(\d{2,4}))?/,
     );
     if (matchDataExplicita) {
       const dia = parseInt(matchDataExplicita[1], 10);
@@ -952,7 +784,12 @@ Data de hoje: ${hoje}`;
       const dataAlvo = new Date(ano, mes - 1, dia);
       const hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
-      const diffDias = Math.max(0, Math.round((dataAlvo.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24)));
+      const diffDias = Math.max(
+        0,
+        Math.round(
+          (dataAlvo.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24),
+        ),
+      );
       mudancas.diasentrada = diffDias;
       temMudanca = true;
     }
@@ -965,7 +802,10 @@ Data de hoje: ${hoje}`;
         /(?:entrada|come[cç]ar|iniciar|primeira?\s*(?:parcela|pagamento)?|pagar?\s*(?:a\s*primeira)?|primeiro\s*(?:pagamento|boleto)?)\s*(?:em|de|daqui|daqui\s*a)\s*(\d+)\s*dias?|(?:daqui|daqui\s*a)\s*(\d+)\s*dias?/,
       );
       if (matchDiasEntrada) {
-        mudancas.diasentrada = parseInt(matchDiasEntrada[1] || matchDiasEntrada[2], 10);
+        mudancas.diasentrada = parseInt(
+          matchDiasEntrada[1] || matchDiasEntrada[2],
+          10,
+        );
         temMudanca = true;
       }
     }
@@ -982,22 +822,60 @@ Data de hoje: ${hoje}`;
         temMudanca = true;
       }
       // "depois de amanhã" → 2 dias
-      else if (/\bdepois\s*de\s*amanh[aã]\b/.test(m)) {
+      // obs: `\b` em JS é ASCII-only — usamos (?!\w) no final pois "ã" não é
+      // word char e o `\b` original falhava quando o usuário digitava com til.
+      else if (/\bdepois\s*de\s*amanh[aã](?!\w)/.test(m)) {
         mudancas.diasentrada = 2;
         temMudanca = true;
       }
       // "amanhã" → 1 dia
-      else if (/\bamanh[aã]\b/.test(m)) {
+      else if (/\bamanh[aã](?!\w)/.test(m)) {
         mudancas.diasentrada = 1;
         temMudanca = true;
       }
     }
 
-    // 4. "adiar", "postergar", "empurrar", "mais pra frente", "mais tempo" (sem valor específico)
+    // 4. Dia da semana ("na quarta", "quarta-feira", "pagar sábado", etc.)
+    //    → calcula diferença em dias até a próxima ocorrência do dia solicitado.
+    //    Aceita forma "<dia>-feira" OU "<dia>" precedido por palavra de contexto
+    //    (pra evitar falso positivo com ordinais tipo "quinta parcela" = 5ª).
+    if (mudancas.diasentrada === undefined) {
+      const diasSemanaMap: Record<string, number> = {
+        domingo: 0,
+        segunda: 1,
+        terca: 2,
+        terça: 2,
+        quarta: 3,
+        quinta: 4,
+        sexta: 5,
+        sabado: 6,
+        sábado: 6,
+      };
+      const regexComFeira =
+        /\b(domingo|segunda|ter[cç]a|quarta|quinta|sexta|s[aá]bado)[\s-]+feira\b/;
+      const regexComContexto =
+        /\b(?:n[oa]|em|pra|para|pro|no\s*dia|dia|pagar|come[cç]ar|iniciar|entrada|vencimento|quero|gostaria|pode\s*ser|fica\s*pra|primeira\s*(?:parcela|parcela\s*na|em|no|pra|para)?)\s+(domingo|segunda|ter[cç]a|quarta|quinta|sexta|s[aá]bado)\b/;
+      const matchDiaSemana =
+        m.match(regexComFeira) || m.match(regexComContexto);
+      if (matchDiaSemana) {
+        const diaAlvo = diasSemanaMap[matchDiaSemana[1]];
+        if (diaAlvo !== undefined) {
+          const diaHoje = new Date().getDay();
+          let diff = diaAlvo - diaHoje;
+          if (diff < 0) diff += 7;
+          mudancas.diasentrada = diff;
+          temMudanca = true;
+        }
+      }
+    }
+
+    // 5. "adiar", "postergar", "empurrar", "mais pra frente", "mais tempo" (sem valor específico)
     //    Interpretar como pedido genérico — adicionar 7 dias sobre o diasentrada atual
     if (mudancas.diasentrada === undefined) {
       if (
-        /\badiar\b|\bpostergar\b|\bempurrar\b|\bmais\s*(?:pra|para)\s*frente\b|\bmais\s*tempo\b|\bmais\s*prazo\b|\bjogar\s*(?:pra|para)\s*frente\b/.test(m)
+        /\badiar\b|\bpostergar\b|\bempurrar\b|\bmais\s*(?:pra|para)\s*frente\b|\bmais\s*tempo\b|\bmais\s*prazo\b|\bjogar\s*(?:pra|para)\s*frente\b/.test(
+          m,
+        )
       ) {
         mudancas.diasentrada = this.parametrosOferta.diasentrada + 7;
         temMudanca = true;
@@ -1015,9 +893,7 @@ Data de hoje: ${hoje}`;
     const m = msg.toLowerCase();
 
     // Padrões: "R$ 200", "R$200", "r$ 200,00", "r$200.00"
-    const matchRS = m.match(
-      /r\$\s*(\d+(?:[.,]\d{1,2})?)/,
-    );
+    const matchRS = m.match(/r\$\s*(\d+(?:[.,]\d{1,2})?)/);
     if (matchRS) {
       return parseFloat(matchRS[1].replace(",", "."));
     }
@@ -1108,19 +984,27 @@ Data de hoje: ${hoje}`;
 
     // 1. Tentar encontrar oferta MENSAL que caiba no orçamento (usar cache mensal)
     if (this.ofertasMensais.length > 0) {
-      const resultadoMensal = this.encontrarMelhorOferta(this.ofertasMensais, valor);
+      const resultadoMensal = this.encontrarMelhorOferta(
+        this.ofertasMensais,
+        valor,
+      );
 
       if (resultadoMensal.cabeNoOrcamento) {
         const { oferta } = resultadoMensal;
         // Atualizar para mensal
-        this.parametrosOferta = { plano: 10, periodicidade: 30, diasentrada: 0 };
+        this.parametrosOferta = {
+          plano: 10,
+          periodicidade: 30,
+          diasentrada: 0,
+        };
         this.ofertasAPI = this.ofertasAPIMensais;
         this.ofertas = this.ofertasMensais;
 
         const textoOfertas = this.formatarOfertasTexto(this.ofertasMensais);
         this.historico.push({
           role: "system",
-          content: `O cliente informou que pode pagar aproximadamente R$ ${valor.toFixed(2)} por parcela. O sistema encontrou a melhor oferta MENSAL que cabe nesse orçamento:\n\n` +
+          content:
+            `O cliente informou que pode pagar aproximadamente R$ ${valor.toFixed(2)} por parcela. O sistema encontrou a melhor oferta MENSAL que cabe nesse orçamento:\n\n` +
             `MELHOR OFERTA: ${oferta.parcelas}x de R$ ${oferta.valor_parcela} (Total: R$ ${oferta.total_com_taxas}, 1º pagamento: ${oferta.data_primeiro_pagamento}, Último: ${oferta.vencimento_final})\n\n` +
             `Apresente essa oferta com entusiasmo, destacando que cabe no orçamento do cliente.\n\nTodas as ofertas mensais disponíveis:\n${textoOfertas}`,
         });
@@ -1130,7 +1014,10 @@ Data de hoje: ${hoje}`;
 
     // 2. Tentar encontrar oferta SEMANAL que caiba no orçamento (já cacheada)
     if (this.ofertasSemanais.length > 0) {
-      const resultadoSemanal = this.encontrarMelhorOferta(this.ofertasSemanais, valor);
+      const resultadoSemanal = this.encontrarMelhorOferta(
+        this.ofertasSemanais,
+        valor,
+      );
 
       if (resultadoSemanal.cabeNoOrcamento) {
         const { oferta } = resultadoSemanal;
@@ -1139,11 +1026,14 @@ Data de hoje: ${hoje}`;
         this.ofertasAPI = this.ofertasAPISemanais;
         this.ofertas = this.ofertasSemanais;
 
-        const textoOfertasSemanais = this.formatarOfertasTexto(this.ofertasSemanais);
+        const textoOfertasSemanais = this.formatarOfertasTexto(
+          this.ofertasSemanais,
+        );
 
         this.historico.push({
           role: "system",
-          content: `O cliente informou que pode pagar aproximadamente R$ ${valor.toFixed(2)} por parcela. O sistema verificou automaticamente as ofertas mensais e semanais. Nenhuma parcela MENSAL cabe no orçamento, mas encontrou uma oferta SEMANAL que cabe perfeitamente:\n\n` +
+          content:
+            `O cliente informou que pode pagar aproximadamente R$ ${valor.toFixed(2)} por parcela. O sistema verificou automaticamente as ofertas mensais e semanais. Nenhuma parcela MENSAL cabe no orçamento, mas encontrou uma oferta SEMANAL que cabe perfeitamente:\n\n` +
             `MELHOR OFERTA SEMANAL: ${oferta.parcelas}x de R$ ${oferta.valor_parcela} semanais (Total: R$ ${oferta.total_com_taxas}, 1º pagamento: ${oferta.data_primeiro_pagamento}, Último: ${oferta.vencimento_final})\n\n` +
             `IMPORTANTE: Apresente essa oferta semanal diretamente com entusiasmo. NÃO pergunte se o cliente quer trocar para semanal — já apresente como a melhor opção encontrada para o orçamento dele. Explique que o valor fica mais acessível com parcelas semanais.\n\nTodas as ofertas semanais disponíveis:\n${textoOfertasSemanais}`,
         });
@@ -1152,12 +1042,14 @@ Data de hoje: ${hoje}`;
     }
 
     // 3. Nenhuma oferta cacheada cabe — sugerir adiar entrada
-    const menorMensal = this.ofertasMensais.length > 0
-      ? this.encontrarMelhorOferta(this.ofertasMensais, Infinity).oferta
-      : null;
-    const menorSemanal = this.ofertasSemanais.length > 0
-      ? this.encontrarMelhorOferta(this.ofertasSemanais, Infinity).oferta
-      : null;
+    const menorMensal =
+      this.ofertasMensais.length > 0
+        ? this.encontrarMelhorOferta(this.ofertasMensais, Infinity).oferta
+        : null;
+    const menorSemanal =
+      this.ofertasSemanais.length > 0
+        ? this.encontrarMelhorOferta(this.ofertasSemanais, Infinity).oferta
+        : null;
 
     // Determinar a menor parcela entre mensal e semanal para referência
     let menorParcelaInfo = "";
@@ -1170,10 +1062,35 @@ Data de hoje: ${hoje}`;
 
     this.historico.push({
       role: "system",
-      content: `O cliente informou que pode pagar aproximadamente R$ ${valor.toFixed(2)} por parcela, mas nenhuma oferta mensal ou semanal disponível cabe nesse orçamento. ${menorParcelaInfo}\n\n` +
+      content:
+        `O cliente informou que pode pagar aproximadamente R$ ${valor.toFixed(2)} por parcela, mas nenhuma oferta mensal ou semanal disponível cabe nesse orçamento. ${menorParcelaInfo}\n\n` +
         `Informe com cuidado que o valor informado está abaixo das parcelas disponíveis. ` +
         `Sugira ao cliente que talvez consiga condições melhores adiando a data da primeira parcela (entrada), o que pode reduzir os valores. ` +
         `Pergunte se ele gostaria de adiar o início do pagamento para buscar condições mais acessíveis.`,
+    });
+  }
+
+  /**
+   * Procura uma oferta que caiba no valor informado DENTRO das ofertas atuais
+   * (após uma mudança de condições). Não mexe em caches nem em parametrosOferta —
+   * apenas injeta contexto para o LLM destacar a melhor opção.
+   */
+  private processarValorEmOfertasAtuais(valor: number): void {
+    if (this.ofertas.length === 0) return;
+
+    const resultado = this.encontrarMelhorOferta(this.ofertas, valor);
+    const periodicidadeNome = this.mapearPeriodicidadeNome(
+      this.parametrosOferta.periodicidade,
+    );
+    const textoOfertas = this.formatarOfertasTexto(this.ofertas);
+
+    const contexto = resultado.cabeNoOrcamento
+      ? `O cliente também mencionou que pode pagar aproximadamente R$ ${valor.toFixed(2)} por parcela. Dentro das novas condições (${periodicidadeNome}, dias de entrada=${this.parametrosOferta.diasentrada}), a melhor oferta que cabe nesse orçamento é: ${resultado.oferta.parcelas}x de R$ ${resultado.oferta.valor_parcela} (1º pagamento: ${resultado.oferta.data_primeiro_pagamento}, Último: ${resultado.oferta.vencimento_final}). Destaque essa opção com entusiasmo.`
+      : `O cliente também informou que pode pagar aproximadamente R$ ${valor.toFixed(2)} por parcela, mas nenhuma das ofertas nas novas condições cabe nesse valor. A menor parcela disponível é R$ ${resultado.oferta.valor_parcela} (${resultado.oferta.parcelas}x). Informe com empatia e pergunte se esse valor ainda funciona.`;
+
+    this.historico.push({
+      role: "system",
+      content: `${contexto}\n\nOfertas disponíveis (${periodicidadeNome}):\n${textoOfertas}`,
     });
   }
 
@@ -1190,9 +1107,15 @@ Data de hoje: ${hoje}`;
     }
 
     // Determinar se precisa buscar na API ou se pode usar cache
-    const mudouDiasEntrada = mudancas.diasentrada !== undefined && mudancas.diasentrada !== this.parametrosOferta.diasentrada;
-    const mudouPlano = mudancas.plano !== undefined && mudancas.plano !== this.parametrosOferta.plano;
-    const mudouPeriodicidade = mudancas.periodicidade !== undefined && mudancas.periodicidade !== this.parametrosOferta.periodicidade;
+    const mudouDiasEntrada =
+      mudancas.diasentrada !== undefined &&
+      mudancas.diasentrada !== this.parametrosOferta.diasentrada;
+    const mudouPlano =
+      mudancas.plano !== undefined &&
+      mudancas.plano !== this.parametrosOferta.plano;
+    const mudouPeriodicidade =
+      mudancas.periodicidade !== undefined &&
+      mudancas.periodicidade !== this.parametrosOferta.periodicidade;
 
     // Atualizar parâmetros com as mudanças
     if (mudancas.plano !== undefined)
@@ -1203,15 +1126,25 @@ Data de hoje: ${hoje}`;
       this.parametrosOferta.diasentrada = mudancas.diasentrada;
 
     // Se mudou apenas periodicidade (sem mudar diasentrada/plano), tentar usar cache
-    const podUsarCache = mudouPeriodicidade && !mudouDiasEntrada && !mudouPlano && this.parametrosOferta.diasentrada === 0;
+    const podUsarCache =
+      mudouPeriodicidade &&
+      !mudouDiasEntrada &&
+      !mudouPlano &&
+      this.parametrosOferta.diasentrada === 0;
 
     if (podUsarCache) {
-      if (this.parametrosOferta.periodicidade === 7 && this.ofertasAPISemanais.length > 0) {
+      if (
+        this.parametrosOferta.periodicidade === 7 &&
+        this.ofertasAPISemanais.length > 0
+      ) {
         // Usar ofertas semanais cacheadas
         this.ofertasAPI = this.ofertasAPISemanais;
         this.ofertas = this.ofertasSemanais;
         console.log(`[DEBUG] Usando ofertas semanais do cache`);
-      } else if (this.parametrosOferta.periodicidade === 30 && this.ofertasAPIMensais.length > 0) {
+      } else if (
+        this.parametrosOferta.periodicidade === 30 &&
+        this.ofertasAPIMensais.length > 0
+      ) {
         // Usar ofertas mensais cacheadas
         this.ofertasAPI = this.ofertasAPIMensais;
         this.ofertas = this.ofertasMensais;
@@ -1220,10 +1153,14 @@ Data de hoje: ${hoje}`;
     }
 
     // Se não pôde usar cache, buscar na API
-    const precisaBuscarAPI = !podUsarCache ||
-      (this.parametrosOferta.periodicidade !== 7 && this.parametrosOferta.periodicidade !== 30) ||
-      (this.parametrosOferta.periodicidade === 7 && this.ofertasAPISemanais.length === 0) ||
-      (this.parametrosOferta.periodicidade === 30 && this.ofertasAPIMensais.length === 0);
+    const precisaBuscarAPI =
+      !podUsarCache ||
+      (this.parametrosOferta.periodicidade !== 7 &&
+        this.parametrosOferta.periodicidade !== 30) ||
+      (this.parametrosOferta.periodicidade === 7 &&
+        this.ofertasAPISemanais.length === 0) ||
+      (this.parametrosOferta.periodicidade === 30 &&
+        this.ofertasAPIMensais.length === 0);
 
     if (precisaBuscarAPI) {
       console.log(
@@ -1240,11 +1177,17 @@ Data de hoje: ${hoje}`;
 
       if (this.ofertasAPI.length === 0) {
         // Se não achou na periodicidade solicitada mas tem semanais cacheadas, sugerir
-        if (this.parametrosOferta.periodicidade !== 7 && this.ofertasSemanais.length > 0) {
-          const textoOfertasSemanais = this.formatarOfertasTexto(this.ofertasSemanais);
+        if (
+          this.parametrosOferta.periodicidade !== 7 &&
+          this.ofertasSemanais.length > 0
+        ) {
+          const textoOfertasSemanais = this.formatarOfertasTexto(
+            this.ofertasSemanais,
+          );
           this.historico.push({
             role: "system",
-            content: `Não foram encontradas ofertas para a periodicidade solicitada (${this.mapearPeriodicidadeNome(this.parametrosOferta.periodicidade)}). ` +
+            content:
+              `Não foram encontradas ofertas para a periodicidade solicitada (${this.mapearPeriodicidadeNome(this.parametrosOferta.periodicidade)}). ` +
               `Porém, existem ofertas no plano SEMANAL disponíveis:\n${textoOfertasSemanais}\n\n` +
               `Informe ao cliente que não há ofertas nessa periodicidade, mas sugira as opções semanais como alternativa.`,
           });
@@ -1280,9 +1223,10 @@ Data de hoje: ${hoje}`;
     // Verificar se o plano solicitado excede as ofertas disponíveis na periodicidade atual
     // Se sim, incluir ofertas semanais cacheadas como alternativa
     const planoSolicitado = this.parametrosOferta.plano;
-    const maxParcelasAtuais = this.ofertas.length > 0
-      ? Math.max(...this.ofertas.map(o => o.parcelas))
-      : 0;
+    const maxParcelasAtuais =
+      this.ofertas.length > 0
+        ? Math.max(...this.ofertas.map((o) => o.parcelas))
+        : 0;
     const temAlternativaSemanal =
       this.parametrosOferta.periodicidade === 30 &&
       maxParcelasAtuais < planoSolicitado &&
@@ -1291,9 +1235,14 @@ Data de hoje: ${hoje}`;
     let mensagemSistema = `O cliente solicitou novas condições. O sistema recalculou as ofertas com: plano=${this.parametrosOferta.plano}, periodicidade=${periodicidadeNome}, dias de entrada=${this.parametrosOferta.diasentrada}.\n\nNovas ofertas ${periodicidadeNome}s disponíveis:\n${textoOfertas}`;
 
     if (temAlternativaSemanal) {
-      const textoOfertasSemanais = this.formatarOfertasTexto(this.ofertasSemanais);
-      const maxParcelasSemanais = Math.max(...this.ofertasSemanais.map(o => o.parcelas));
-      mensagemSistema += `\n\nATENÇÃO: O cliente pediu ${planoSolicitado}x, mas no plano mensal o máximo disponível é ${maxParcelasAtuais}x. ` +
+      const textoOfertasSemanais = this.formatarOfertasTexto(
+        this.ofertasSemanais,
+      );
+      const maxParcelasSemanais = Math.max(
+        ...this.ofertasSemanais.map((o) => o.parcelas),
+      );
+      mensagemSistema +=
+        `\n\nATENÇÃO: O cliente pediu ${planoSolicitado}x, mas no plano mensal o máximo disponível é ${maxParcelasAtuais}x. ` +
         `Porém, no plano SEMANAL existem opções de até ${maxParcelasSemanais}x com parcelas menores!\n\n` +
         `Ofertas SEMANAIS disponíveis:\n${textoOfertasSemanais}\n\n` +
         `Apresente as ofertas mensais disponíveis E sugira proativamente as ofertas semanais como alternativa para o cliente conseguir mais parcelas. ` +
@@ -1345,12 +1294,14 @@ Data de hoje: ${hoje}`;
       this.estado = "encerrado";
 
       // Extrair dados de pagamento do retorno da formalização
-      const terceiraEtapa = (resultado.detalhes as Record<string, any>)
-        ?.terceiraEtapaResponse;
+      const terceiraEtapa = (
+        resultado.detalhes as Record<string, Record<string, unknown>>
+      )?.terceiraEtapaResponse;
       const urlBoleto = terceiraEtapa?.urlBoleto as string | undefined;
       const pixCopiaECola = terceiraEtapa?.pixCopiaECola as string | undefined;
 
-      let conteudoPagamento = "O acordo foi formalizado com sucesso no sistema.";
+      let conteudoPagamento =
+        "O acordo foi formalizado com sucesso no sistema.";
       if (urlBoleto) {
         conteudoPagamento += `\nLink do boleto: ${urlBoleto}`;
       }
@@ -1401,7 +1352,8 @@ Data de hoje: ${hoje}`;
   public async enviarMensagem(msg: string): Promise<ResultadoChat> {
     // Primeira mensagem: registrar saudação no histórico e conversar naturalmente
     if (!this.apresentacaoEnviada && this.estado === "apresentacao") {
-      const saudacao = "Olá! Eu sou a LucIA, assistente virtual da Cobrance. Estou à disposição para te ajudar no que precisar. Como posso te auxiliar hoje?";
+      const saudacao =
+        "Olá! Eu sou a LucIA, assistente virtual da Cobrance. Estou à disposição para te ajudar no que precisar. Como posso te auxiliar hoje?";
       this.historico.push({ role: "assistant", content: saudacao });
       this.apresentacaoEnviada = true;
       this.estado = "conversando";
@@ -1428,7 +1380,8 @@ Data de hoje: ${hoje}`;
       this.historico.push({ role: "user", content: msg });
       this.historico.push({
         role: "system",
-        content: "O acordo já foi formalizado com sucesso. O cliente está fazendo uma pergunta adicional. Responda de forma acolhedora e útil. Se ele quiser negociar outra pendência, oriente a limpar a sessão para iniciar um novo atendimento.",
+        content:
+          "O acordo já foi formalizado com sucesso. O cliente está fazendo uma pergunta adicional. Responda de forma acolhedora e útil. Se ele quiser negociar outra pendência, oriente a limpar a sessão para iniciar um novo atendimento.",
       });
       return await this.chamarLLM();
     }
@@ -1446,18 +1399,20 @@ Data de hoje: ${hoje}`;
       return await this.processarConsultaDividas();
     }
 
-    // 2. Detectar valor de parcela (ex: "posso pagar 200 reais")
-    //    Só processa se NÃO houver mudança de condições na mesma mensagem
+    // 2. Detectar valor + mudança de condições. Se ambos vierem na mesma
+    //    mensagem (ex: "quero pagar 500 na quinta"), processa a mudança
+    //    primeiro e DEPOIS filtra as novas ofertas pelo valor informado —
+    //    assim respeitamos a data escolhida pelo cliente sem descartar o valor.
     const mudancasCondicoes = this.detectarMudancaCondicoes(msg);
     const valorParcela = this.detectarValorParcela(msg);
 
-    if (valorParcela !== null && !mudancasCondicoes) {
-      await this.processarValorParcela(valorParcela);
-    }
-
-    // 3. Detectar mudança de condições (plano, periodicidade, dias entrada)
     if (mudancasCondicoes) {
       await this.processarMudancaCondicoes(mudancasCondicoes);
+      if (valorParcela !== null) {
+        this.processarValorEmOfertasAtuais(valorParcela);
+      }
+    } else if (valorParcela !== null) {
+      await this.processarValorParcela(valorParcela);
     }
 
     // 3. Chamar LLM

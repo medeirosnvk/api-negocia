@@ -9,6 +9,10 @@
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.{ts,json}\" \"*.{js,json,cjs}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,json}\" \"*.{js,json,cjs}\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
@@ -35,10 +39,16 @@
     "@types/express-session": "^1.17.5",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^15.15.0",
     "jest": "^30.2.0",
+    "prettier": "^3.8.3",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.1",
     "tsx": "^4.7.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.59.0"
   }
 }

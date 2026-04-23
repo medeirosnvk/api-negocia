@@ -1,7 +1,7 @@
-import React from 'react';
-import type { Mensagem } from '../types';
-import clsx from 'clsx';
-import { useTheme } from '../hooks/useTheme';
+import React from "react";
+import type { Mensagem } from "../types";
+import clsx from "clsx";
+import { useTheme } from "../hooks/useTheme";
 
 interface MessageBubbleProps {
   mensagem: Mensagem;
@@ -30,14 +30,20 @@ function formatarTexto(texto: string, isLight: boolean) {
           className="text-lucia-accent hover:text-lucia-accent-hover underline underline-offset-2 decoration-lucia-accent/40 break-all transition-colors"
         >
           {match[1]}
-        </a>
+        </a>,
       );
     } else if (match[2]) {
-      const conteudo = match[2].replace(/\*/g, '');
+      const conteudo = match[2].replace(/\*/g, "");
       partes.push(
-        <strong key={`bold-${keyCounter++}`} className={clsx("font-semibold", isLight ? "text-gray-900" : "text-lucia-bright")}>
+        <strong
+          key={`bold-${keyCounter++}`}
+          className={clsx(
+            "font-semibold",
+            isLight ? "text-gray-900" : "text-lucia-bright",
+          )}
+        >
           {conteudo}
-        </strong>
+        </strong>,
       );
     }
 
@@ -53,47 +59,57 @@ function formatarTexto(texto: string, isLight: boolean) {
 
 export function MessageBubble({ mensagem }: MessageBubbleProps) {
   const { theme } = useTheme();
-  const isLight = theme === 'light';
-  const isUser = mensagem.role === 'user';
+  const isLight = theme === "light";
+  const isUser = mensagem.role === "user";
   const timestamp = new Date(mensagem.ts);
-  const horaFormatada = timestamp.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
+  const horaFormatada = timestamp.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
   return (
     <div
       className={clsx(
-        'flex animate-slide-up',
-        isUser ? 'justify-end' : 'justify-start'
+        "flex animate-slide-up",
+        isUser ? "justify-end" : "justify-start",
       )}
     >
       <div
         className={clsx(
-          'max-w-[80%] md:max-w-[72%] rounded-2xl px-4 py-3 transition-colors',
+          "max-w-[80%] md:max-w-[72%] rounded-2xl px-4 py-3 transition-colors",
           isUser
             ? isLight
-              ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200'
-              : 'bg-gradient-to-br from-emerald-900/80 to-emerald-950 border border-emerald-500/10'
+              ? "bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200"
+              : "bg-gradient-to-br from-emerald-900/80 to-emerald-950 border border-emerald-500/10"
             : isLight
-              ? 'bg-white border border-gray-200'
-              : 'bg-lucia-panel border border-lucia-border'
+              ? "bg-white border border-gray-200"
+              : "bg-lucia-panel border border-lucia-border",
         )}
       >
-        <p className={clsx(
-          'text-[13.5px] leading-[1.65] whitespace-pre-wrap break-words font-body',
-          isUser
-            ? isLight ? 'text-emerald-900' : 'text-emerald-100'
-            : isLight ? 'text-gray-700' : 'text-lucia-text'
-        )}>
+        <p
+          className={clsx(
+            "text-[13.5px] leading-[1.65] whitespace-pre-wrap break-words font-body",
+            isUser
+              ? isLight
+                ? "text-emerald-900"
+                : "text-emerald-100"
+              : isLight
+                ? "text-gray-700"
+                : "text-lucia-text",
+          )}
+        >
           {formatarTexto(mensagem.text, isLight)}
         </p>
         <div
           className={clsx(
-            'text-[10px] mt-1.5 text-right font-mono tracking-wider',
+            "text-[10px] mt-1.5 text-right font-mono tracking-wider",
             isUser
-              ? isLight ? 'text-emerald-600/50' : 'text-emerald-400/40'
-              : isLight ? 'text-gray-400' : 'text-lucia-muted/50'
+              ? isLight
+                ? "text-emerald-600/50"
+                : "text-emerald-400/40"
+              : isLight
+                ? "text-gray-400"
+                : "text-lucia-muted/50",
           )}
         >
           {horaFormatada}

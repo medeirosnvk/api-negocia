@@ -1,9 +1,4 @@
-import {
-  Divida,
-  Parametros,
-  ConfiguracaoAcordo,
-  OfertaCalculada,
-} from "../types/index.js";
+import { ConfiguracaoAcordo, OfertaCalculada } from "../types/index.js";
 
 /**
  * Calcula projeções de dívidas, ofertas de parcelamento e datas de vencimento
@@ -182,7 +177,7 @@ export class CalculadoraAcordo {
    */
   public getDataEntradaMaxima(): string {
     const parametros = this.dados.parametros[0];
-    let data = parametros.data_entrada_maxima;
+    const data = parametros.data_entrada_maxima;
 
     if (!data) {
       const dias = parametros.dias_entrada ?? 0;

@@ -120,8 +120,7 @@ export class MessageBatchService {
           cadencia: engine.getCadencia(),
           estado: engine.getEstado(),
           credores: engine.getCredores(),
-          credor_selecionado:
-            engine.getCredorSelecionado() || undefined,
+          credor_selecionado: engine.getCredorSelecionado() || undefined,
           ofertas_api: engine.getOfertasAPI(),
         },
       };

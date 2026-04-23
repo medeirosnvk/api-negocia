@@ -43,8 +43,16 @@ const API_KEY = process.env.API_KEY || "";
 // Inicializar RAG Service (singleton)
 // Usar sempre src/data/conhecimento (arquivos .md não são copiados pelo tsc para dist/)
 const raizBackend = path.resolve(__dirname, "..");
-const diretorioConhecimento = path.resolve(raizBackend, "src", "data", "conhecimento");
-const ragService = new RagService(API_KEY, path.resolve(raizBackend, ".cache-embeddings.json"));
+const diretorioConhecimento = path.resolve(
+  raizBackend,
+  "src",
+  "data",
+  "conhecimento",
+);
+const ragService = new RagService(
+  API_KEY,
+  path.resolve(raizBackend, ".cache-embeddings.json"),
+);
 ragService.inicializar(diretorioConhecimento).catch((err) => {
   console.error("[RAG] Erro ao inicializar:", err);
 });
@@ -156,11 +164,17 @@ app.post("/api/chat", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Erro ao processar mensagem:", error);
 
-    const errorMessage = error instanceof Error ? error.message : "Desconhecido";
+    const errorMessage =
+      error instanceof Error ? error.message : "Desconhecido";
 
-    if (errorMessage.includes("503") || errorMessage.includes("UNAVAILABLE") || errorMessage.includes("high demand")) {
+    if (
+      errorMessage.includes("503") ||
+      errorMessage.includes("UNAVAILABLE") ||
+      errorMessage.includes("high demand")
+    ) {
       res.status(503).json({
-        resposta: "Estamos enfrentando um pico de alta demanda no momento. Por favor, aguarde alguns instantes e tente novamente. 🙏",
+        resposta:
+          "Estamos enfrentando um pico de alta demanda no momento. Por favor, aguarde alguns instantes e tente novamente. 🙏",
         status: "erro_temporario",
       });
       return;
