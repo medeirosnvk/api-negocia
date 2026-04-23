@@ -11,11 +11,16 @@ export interface ChatResponse {
     | "selecionando_credor"
     | "negociando"
     | "encerrado"
-    | "acordo_fechado";
+    | "conversando"
+    | "acordo_fechado"
+    | "acordo_formalizado"
+    | "erro_formalizacao";
   iddevedor?: number;
   plano?: number;
   periodicidade?: number;
   diasentrada?: number;
+  urlBoleto?: string;
+  pixCopiaECola?: string;
 }
 
 export interface FormalizacaoResponse {

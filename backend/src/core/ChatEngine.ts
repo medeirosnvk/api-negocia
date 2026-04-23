@@ -169,6 +169,19 @@ export class ChatEngine {
   }
 
   /**
+   * Recebe uma data no formato dd/mm/yyyy e devolve "quinta-feira, 23/04/2026".
+   * Usado para enriquecer as datas das ofertas entregues ao LLM e evitar
+   * que ele tente calcular/inventar o dia da semana.
+   */
+  private dataBrComDiaSemana(dataBr: string): string {
+    const m = dataBr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return dataBr;
+    const [, dia, mes, ano] = m;
+    const data = new Date(Number(ano), Number(mes) - 1, Number(dia));
+    return this.formatarDataCompleta(data);
+  }
+
+  /**
    * Formata data ISO para dd/mm/yyyy
    */
   private formatarDataISO(dataISO: string): string {
@@ -433,16 +446,7 @@ Regras:
     const hoje = this.formatarDataCompleta(new Date());
     const credor = this.credorSelecionado!;
 
-    const textoOfertas = this.ofertas
-      .map((o) => {
-        const detalheParcelas = o.datas_parcelas
-          .map(
-            (data, i) => `  Parcela ${i + 1}: ${data} - R$ ${o.valor_parcela}`,
-          )
-          .join("\n");
-        return `- ${o.parcelas}x de R$ ${o.valor_parcela} (Total: R$ ${o.total_com_taxas}, 1º pagamento: ${o.data_primeiro_pagamento}, Último: ${o.vencimento_final})\n${detalheParcelas}`;
-      })
-      .join("\n");
+    const textoOfertas = this.formatarOfertasTexto(this.ofertas);
 
     // Montar texto dos detalhes das dívidas se disponíveis
     let textoDividas = "";
@@ -503,12 +507,20 @@ Você tem acesso às seguintes funcionalidades automáticas:
 - **Formalização automática**: Quando o cliente aceitar uma proposta, o sistema formaliza o acordo automaticamente. Não é necessário redirecionar para outro canal.
 
 ## Fechamento
-Se a pessoa aceitar claramente (ex.: "aceito", "fechado", "ok pode ser"), responda EXATAMENTE:
+Se a pessoa aceitar claramente (ex.: "aceito", "fechado", "ok pode ser", "pode gerar", "manda", "bora"), responda EXATAMENTE:
 "Obrigado! Estou formalizando seu acordo."
 O sistema irá processar a formalização automaticamente.
 
 Data de hoje: ${hoje}.
-IMPORTANTE: Sempre que precisar se referir ao dia atual ou dia da semana, use EXATAMENTE o valor acima. NUNCA invente ou calcule o dia da semana por conta própria.`;
+
+## REGRA CRÍTICA — DATAS E DIAS DA SEMANA
+1. NUNCA invente, calcule ou adivinhe uma data ou dia da semana.
+2. Use APENAS os valores fornecidos:
+   - "Data de hoje" acima para referência ao dia atual.
+   - As datas listadas em "Ofertas Disponíveis" (cada oferta já traz "1º pagamento", "Último" e cada parcela com o dia da semana entre vírgulas, ex.: "segunda-feira, 27/04/2026").
+3. Quando o cliente pedir uma data/dia da semana, NÃO pergunte confirmação. O sistema já recalcula e devolve a oferta com a data real. Apenas repita a data EXATAMENTE como aparece na oferta disponível.
+4. Se não houver oferta com a data pedida, diga: "A data mais próxima que consigo é [data da oferta conforme texto acima]".
+5. Se você precisar mencionar o dia da semana de uma data, use EXATAMENTE o rótulo já impresso ao lado da data na oferta — não recalcule.`;
 
     this.historico.push({
       role: "system",
@@ -938,10 +950,10 @@ IMPORTANTE: Sempre que precisar se referir ao dia atual ou dia da semana, use EX
         const detalheParcelas = o.datas_parcelas
           .map(
             (data: string, i: number) =>
-              `  Parcela ${i + 1}: ${data} - R$ ${o.valor_parcela}`,
+              `  Parcela ${i + 1}: ${this.dataBrComDiaSemana(data)} - R$ ${o.valor_parcela}`,
           )
           .join("\n");
-        return `- ${o.parcelas}x de R$ ${o.valor_parcela} (Total: R$ ${o.total_com_taxas}, 1º pagamento: ${o.data_primeiro_pagamento}, Último: ${o.vencimento_final})\n${detalheParcelas}`;
+        return `- ${o.parcelas}x de R$ ${o.valor_parcela} (Total: R$ ${o.total_com_taxas}, 1º pagamento: ${this.dataBrComDiaSemana(o.data_primeiro_pagamento)}, Último: ${this.dataBrComDiaSemana(o.vencimento_final)})\n${detalheParcelas}`;
       })
       .join("\n");
   }
@@ -1411,6 +1423,18 @@ IMPORTANTE: Sempre que precisar se referir ao dia atual ou dia da semana, use EX
       if (valorParcela !== null) {
         this.processarValorEmOfertasAtuais(valorParcela);
       }
+      // Reforço explícito da data real quando o cliente pediu uma data
+      // específica — evita que a LLM alucine/invente o dia da semana.
+      if (
+        mudancasCondicoes.diasentrada !== undefined &&
+        this.ofertas.length > 0
+      ) {
+        const primeira = this.ofertas[0];
+        this.historico.push({
+          role: "system",
+          content: `⚠️ ATENÇÃO — CONFIRMAÇÃO DE DATA: O cliente pediu uma data específica. A primeira parcela (1º pagamento) fica EXATAMENTE em **${this.dataBrComDiaSemana(primeira.data_primeiro_pagamento)}** conforme a API. Ao responder ao cliente, repita ESSA data e ESSE dia da semana textualmente — não recalcule, não invente, não aproxime. Se o cliente tiver pedido um dia diferente do apresentado, diga com transparência que o sistema ajustou (ex: por ser fim de semana).`,
+        });
+      }
     } else if (valorParcela !== null) {
       await this.processarValorParcela(valorParcela);
     }
@@ -1420,10 +1444,12 @@ IMPORTANTE: Sempre que precisar se referir ao dia atual ou dia da semana, use EX
 
     // 4. Detectar aceite -> formalizar automaticamente
     const m = msg.toLowerCase();
+    // Termos fortes de aceite. Evita apenas "sim"/"ok"/"tá" isolados por
+    // serem ambíguos (o cliente pode estar só confirmando uma informação).
+    const aceiteRegex =
+      /\baceito\b|\baceita(?:r|do|mos)?\b|\bfechad[oa]\b|\bfecha(?:r|mos)?\b|\bfechou\b|\bconfirmo\b|\bconfirma(?:r|do)\b|\bpode\s*(?:ser|gerar|mandar|enviar|formalizar|emitir|ir)\b|\bgerar?\s*(?:o\s*)?(?:boleto|acordo|pix|acordo)\b|\bemiti(?:r|a)\s*(?:o\s*)?boleto\b|\bmanda(?:r)?\b|\bbora\b|\bvamos\s*(?:la|lá|nessa|fazer|fechar|formalizar)\b|\bok\s*pode\s*(?:ser|gerar|mandar)\b|\btopo\b|\bt[aá]\s*(?:bom|certo|otimo|ótimo|fechado)\b|\bbeleza\b|\bfaz\s*a[íi]\b|\bfico\s*com\s*(?:esse|essa)\b|\bprefiro\s*(?:esse|essa)\b|\bquero\s*(?:esse|essa|essa\s*op[cç][aã]o)\b/i;
     if (
-      m.includes("aceito") ||
-      m.includes("fechado") ||
-      m.includes("pode ser") ||
+      aceiteRegex.test(m) ||
       resultado.resposta.toLowerCase().includes("formalizando")
     ) {
       const planoDetectado = this.detectarPlanoAceito();

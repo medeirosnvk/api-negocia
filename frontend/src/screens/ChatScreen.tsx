@@ -165,6 +165,39 @@ export function ChatScreen() {
       setIsTyping(false);
       adicionarMensagem(data.resposta, "assistant");
 
+      // Backend já formalizou internamente — apenas anexar detalhes de pagamento
+      if (data.status === "acordo_formalizado") {
+        const partes: string[] = [];
+        if (data.urlBoleto) {
+          partes.push(`🔗 **Boleto:** ${data.urlBoleto}`);
+        }
+        if (data.pixCopiaECola) {
+          partes.push(`🔐 **PIX Copia e Cola:**\n${data.pixCopiaECola}`);
+        }
+        if (partes.length > 0) {
+          adicionarMensagem(
+            `✅ **Acordo formalizado com sucesso!**\n\n${partes.join("\n\n")}\n\n⚠️ Guarde estas informações para realizar o pagamento.`,
+            "assistant",
+          );
+        } else {
+          adicionarMensagem(
+            "⚠️ O acordo foi formalizado, mas não recebemos os dados de pagamento. Entre em contato com a Cobrance.",
+            "assistant",
+          );
+        }
+        return;
+      }
+
+      // Erro durante formalização interna
+      if (data.status === "erro_formalizacao") {
+        adicionarMensagem(
+          "⚠️ Não foi possível concluir a formalização. Por favor, tente novamente ou entre em contato com a Cobrance.",
+          "assistant",
+        );
+        return;
+      }
+
+      // Fallback: backend sinalizou aceite mas não formalizou — tentar via /api/formalizar-acordo
       if (data.status === "acordo_fechado") {
         if (
           data.iddevedor != null &&
