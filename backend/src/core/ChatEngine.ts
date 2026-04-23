@@ -253,7 +253,7 @@ Regras:
       const response = await axios.post(
         "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         {
-          model: "gemini-2.5-flash-lite",
+          model: "gemini-2.5-flash",
           messages: mensagens,
           temperature: 0.7,
         },
@@ -578,7 +578,7 @@ Data de hoje: ${hoje}.
       const response = await axios.post(
         "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         {
-          model: "gemini-2.5-flash-lite",
+          model: "gemini-2.5-flash",
           messages: mensagens,
           temperature: 0.7,
         },
